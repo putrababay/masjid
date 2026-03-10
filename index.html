@@ -761,11 +761,11 @@
 
         // Menentukan Durasi Iqomah berdasarkan waktu sholat
         let iqomahDuration = 10;
-        if (id === "subuh") iqomahDuration = 20;
-        else if (id === "dzuhur") iqomahDuration = 15;
-        else if (id === "ashar") iqomahDuration = 10;
-        else if (id === "maghrib") iqomahDuration = 10;
-        else if (id === "isya") iqomahDuration = 15;
+        if (id === "subuh") iqomahDuration = 25;
+        else if (id === "dzuhur") iqomahDuration = 25;
+        else if (id === "ashar") iqomahDuration = 20;
+        else if (id === "maghrib") iqomahDuration = 20;
+        else if (id === "isya") iqomahDuration = 25;
 
         // Define bounds for the phases
         const adzanStart = new Date(target.getTime());
@@ -861,7 +861,7 @@
         }
 
         const titles = {
-          "pre-adzan": `WAKTU ADZAN ${next.id.toUpperCase()}`,
+          "pre-adzan": `MENUJU WAKTU ADZAN ${next.id.toUpperCase()}`,
           "iqomah": `MENUJU IQOMAH ${next.id.toUpperCase()}`,
           "sholat": `SHOLAT ${next.id.toUpperCase()} BERLANGSUNG`
         };
