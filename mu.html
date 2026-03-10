@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart TV Masjid An-Nur - Sidoarjo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg-main: #f1f5f9;
+            --primary-green: #064e3b;
+            --accent-green: #10b981;
+            --soft-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --gold-soft: #fbbf24;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: var(--bg-main);
+            font-family: "Plus Jakarta Sans", sans-serif;
+            color: var(--text-main);
+            /* Base font-size scales dynamically with TV height */
+            font-size: 1.8vh;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-rows: 1fr auto auto;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* panel header inside QRIS */
+        .qris-panel .panel-header {
+            text-align: center;
+            margin-bottom: 1.5vh;
+        }
+
+        .qris-panel .panel-header .clock-display {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--primary-green);
+            line-height: 1;
+            margin-bottom: 1.5vh;
+            text-shadow: 0.2vh 0.2vh 0.4vh rgba(0, 0, 0, 0.05);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .qris-panel .panel-header .clock-display span {
+            font-size: 1.5rem;
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .qris-panel .panel-header .masjid-title h1 {
+            font-size: 1.2rem;
+            margin: 0.5vh 0 0 0;
+            color: var(--primary-green);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05rem;
+        }
+
+        .qris-panel .panel-header .masjid-title .text-muted {
+            font-size: 0.85rem;
+            margin-top: 0.2vh;
+        }
+
+        .info-date-container {
+            margin-top: 1.5vh;
+            display: flex;
+            justify-content: center;
+            height: 3.5vh;
+        }
+
+        .date-badge {
+            display: none;
+            background: var(--bg-main);
+            color: var(--primary-green);
+            padding: 0.4vh 0.8vw;
+            border-radius: 2vw;
+            align-items: center;
+            gap: 0.5vw;
+            animation: fadeIn 0.5s ease-in-out;
+            border: 1px solid #cbd5e1;
+        }
+
+        .date-badge.active {
+            display: flex;
+        }
+
+        .date-badge .date-label {
+            font-size: 0.65rem;
+            font-weight: 800;
+            background: var(--primary-green);
+            color: white;
+            padding: 0.2vh 0.6vw;
+            border-radius: 1vw;
+            letter-spacing: 0.05rem;
+        }
+
+        .date-badge .date-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* ================= CONTENT AREA ================= */
+        .content-area {
+            display: flex;
+            margin: 1.5vh 0.5vw;
+            gap: 0.8vw;
+            /* overflow: hidden; */
+        }
+
+        .slider-container {
+            flex: 1;
+            background: #000;
+            border-radius: 1.5vw;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1vh 3vh rgba(0, 0, 0, 0.25);
+        }
+
+        /* Iframe & Image Full Coverage */
+        .slider-item {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            object-fit: cover;
+        }
+
+        .slider-item.active {
+            opacity: 1;
+        }
+
+        /* ================= QRIS & DETAIL TAKMIR ================= */
+        .qris-panel {
+            width: 20vw;
+            /* Proportionate width */
+            background: #ffffff;
+            border-radius: 1.2vw;
+            display: flex;
+            flex-direction: column;
+            padding: 0.6vw;
+            box-shadow: 0 1vh 2vh rgb(8 100 73 / 36%);
+            justify-content: space-between;
+        }
+
+        .qris-card {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 0.5vw;
+            border-radius: 1vw;
+            text-align: center;
+            margin-bottom: 1.5vh;
+            border: 0.15vw dashed #cbd5e1;
+        }
+
+        .qris-card .text-uppercase {
+            font-size: 0.8rem;
+            letter-spacing: 0.05rem;
+            color: var(--primary-green) !important;
+        }
+
+        .qris-img {
+            width: 10vw;
+            height: auto;
+            background: white;
+            padding: 0.5vw;
+            border-radius: 0.8vw;
+            box-shadow: 0 0.5vh 1.5vh rgba(0, 0, 0, 0.08);
+        }
+
+        .qris-card .text-dark {
+            font-size: 0.85rem;
+            margin-top: 0.8vh;
+        }
+
+        .mosque-detail-info {
+            font-size: 0.7rem;
+            background: #f8fafc;
+            padding: 1vw;
+            border-radius: 0.8vw;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6vh 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: var(--primary-green);
+            text-align: right;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05rem;
+            color: var(--accent-green);
+            font-weight: 800;
+            margin-bottom: 0.5vh;
+            margin-top: 1vh;
+        }
+
+        .section-label:first-child {
+            margin-top: 0;
+        }
+
+        .info-slide {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .info-slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ================= RUNNING TEXT ================= */
+        .finance-section {
+            background: linear-gradient(90deg, var(--primary-green), #022c22);
+            color: #fff;
+            padding: 1.2vh 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-top: 0.2vh solid var(--accent-green);
+        }
+
+        .finance-section marquee {
+            display: flex;
+            align-items: center;
+        }
+
+        .finance-section span {
+            margin: 0 3vw;
+        }
+
+        /* ================= PRAYER TIMES ================= */
+        .prayer-footer {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 0.8vw;
+            padding: 0.1vh 0.1vw 0.1vh 0.1vw;
+            /* background: var(--bg-main); */
+        }
+
+        .prayer-box {
+            background: linear-gradient(145deg, #b6edd4 0%, rgba(240, 253, 244, 0.9) 100%);
+            text-align: center;
+            padding: 0.5vh 0.5vw;
+            border-radius: 0.8vw;
+            border-bottom: 1.2vh solid #a7f3d0;
+            border-top: 1px solid rgba(255, 255, 255, 0.8);
+            border-left: 1px solid rgba(255, 255, 255, 0.8);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0.8vh 1.5vh rgba(6, 78, 59, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        .prayer-name {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05rem;
+            margin-bottom: 0.5vh;
+            z-index: 2;
+        }
+
+        .prayer-time {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary-green);
+            line-height: 1;
+            z-index: 2;
+        }
+
+        .prayer-time-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5vh;
+            z-index: 2;
+        }
+
+        .prayer-box .countdown-area {
+            font-size: 0.85rem;
+            height: 1.2rem;
+            /* Prevent layout shift */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .prayer-box.next {
+            background: linear-gradient(135deg, var(--accent-green), var(--primary-green));
+            color: #fff;
+            border-bottom: 1.2vh solid #fbbf24;
+            transform: translateY(-1.2vh);
+            box-shadow: 0 1.2vh 2.5vh rgba(16, 185, 129, 0.3);
+        }
+
+        .prayer-box.next .prayer-name,
+        .prayer-box.next .prayer-time {
+            color: #fff !important;
+            text-shadow: 0 0.2vh 0.4vh rgba(0, 0, 0, 0.2);
+        }
+
+        .countdown-tag {
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 0.2vh 0.8vw;
+            border-radius: 1vw;
+            font-weight: 700;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* FOOTER BANNER FOR PRAYER PHASES */
+        .prayer-banner {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2vw;
+            padding: 1vh 2vw;
+            border-radius: 0.8vw;
+            color: white;
+            font-weight: 800;
+            animation: fadeIn 0.5s ease;
+            box-shadow: 0 1vh 2vh rgba(0, 0, 0, 0.15);
+        }
+
+        .prayer-banner.adzan-prep {
+            background: linear-gradient(135deg, #ef4444, #991b1b);
+            border-bottom: 0.4vh solid #fca5a5;
+        }
+
+        .prayer-banner.adzan-prep .banner-title {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+        }
+
+        .prayer-banner .banner-time {
+            font-size: 2.5rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 800;
+            letter-spacing: 0.1rem;
+        }
+
+        .prayer-banner.iqomah-prep {
+            background: linear-gradient(135deg, #f59e0b, #b45309);
+            border-bottom: 0.4vh solid #fde68a;
+        }
+
+        .prayer-banner.sholat-prep {
+            background: linear-gradient(135deg, #10b981, #047857);
+            border-bottom: 0.4vh solid #6ee7b7;
+        }
+
+        /* PRAYER HOVER EFFECT */
+        .prayer-box:hover {
+            transform: translateY(-0.5vh);
+            box-shadow: 0 0.8vh 1.5vh rgba(0, 0, 0, 0.08);
+        }
+
+        /* SLIDER PROGRESS BAR */
+        .slider-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 0.6vh;
+            width: 0%;
+            background: linear-gradient(90deg, #10b981, #fbbf24);
+            transition: width linear;
+            z-index: 99;
+        }
+
+        /* ================= FULLSCREEN SHOLAT OVERLAY ================= */
+        .sholat-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000000;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .sholat-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .sholat-overlay-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 2vh;
+            letter-spacing: 0.3rem;
+            text-transform: uppercase;
+            color: #cbd5e1;
+        }
+
+        .sholat-overlay-timer {
+            font-size: 10rem;
+            font-weight: 800;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 6vh;
+            color: #fff;
+            background: #10b981c7;
+            padding: 1vh 4vw;
+            border-radius: 2vw;
+            box-shadow: 0 1vh 3vh rgba(16, 185, 129, 0.4);
+        }
+
+        .sholat-overlay-verse-ar {
+            font-size: 4rem;
+            font-weight: 500;
+            font-family: 'Amiri', 'Traditional Arabic', serif;
+            margin-bottom: 2vh;
+            color: var(--gold-soft);
+            line-height: 1.6;
+        }
+
+        .sholat-overlay-verse-id {
+            font-size: 1.6rem;
+            font-weight: 400;
+            font-style: italic;
+            max-width: 80vw;
+            line-height: 1.5;
+            color: #94a3b8;
+            margin-bottom: 6vh;
+        }
+
+        .sholat-overlay-message {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: 0.1rem;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 1.5vh 3vw;
+            border-radius: 1vw;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+
+
+        /* FULLSCREEN MODE */
+        .slider-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9998;
+            border-radius: 0;
+            margin: 0;
+        }
+
+        /* Fixed Running Text Overlay in Fullscreen */
+        .app-container.fullscreen-active .finance-section {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            height: 5vh;
+            z-index: 9999;
+            margin: 0;
+            display: flex;
+            /* Ensure marquee alignment */
+            background: linear-gradient(90deg, rgba(6, 78, 59, 0.85), rgba(2, 44, 34, 0.9));
+            /* Semi-transparent */
+            backdrop-filter: blur(4px);
+            box-shadow: 0 -0.5vh 2vh rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div class="content-area">
+            <div class="slider-container" id="slider">
+                <!-- Regular Video -->
+                <div class="slider-item active" id="yt-player-1" data-videoid="F8121v_ER9M" data-islive="false"></div>
+                <!-- Live Stream Video -->
+                <div class="slider-item" id="yt-player-2" data-videoid="OFLYbSRpMdg" data-islive="true"></div>
+                <img class="slider-item" src="1.jpg" />
+                <img class="slider-item" src="11.jpg" />
+                <img class="slider-item" src="2.jpg" />
+                <img class="slider-item" src="3.jpg" />
+                <img class="slider-item" src="4.jpg" />
+            </div>
+
+            <div class="qris-panel">
+                <div class="panel-header">
+                    <div class="clock-display" id="digital-clock">
+                        00:00<span>:00</span>
+                    </div>
+                    <div class="masjid-title">
+                        <h1>MASJID AN-NUR SIDOARJO</h1>
+                        <div class="text-muted small">
+                            Jl. Mojopahit No.666, Celep, Kabupaten Sidoarjo Jawa Timur
+                        </div>
+                    </div>
+                    <div class="info-date-container">
+                        <div class="date-badge active" id="badge-hijri">
+                            <span class="date-label">HIJRIAH</span>
+                            <span class="date-value" id="hijri-date">-- Ramadan 1447 H</span>
+                        </div>
+                        <div class="date-badge" id="badge-masehi">
+                            <span class="date-label">MASEHI</span>
+                            <span class="date-value" id="masehi-date">-- Februari 2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qris-card">
+                    <div class="small fw-bold mb-2 text-uppercase text-muted">
+                        Infaq & Sedekah
+                    </div>
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=DonasiMasjidAnNurSidoarjo"
+                        alt="QRIS" class="qris-img mb-2" />
+                    <div class="small text-dark fw-bold">
+                        Scan QRIS a.n Masjid An-Nur
+                    </div>
+                </div>
+
+                <div class="mosque-detail-info" id="info-slider">
+                    <div class="info-slide active">
+                        <div class="section-label">Informasi Masjid</div>
+                        <div class="info-row">
+                            <span class="info-label">ID Masjid</span><span class="info-value">MNR-SDA01</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Kapasitas</span><span class="info-value">800 Jamaah</span>
+                        </div>
+
+                        <div class="section-label">Susunan Takmir</div>
+                        <div class="info-row">
+                            <span class="info-label">Ketua</span><span class="info-value">H. Ahmad Fulan</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Sekretaris</span><span class="info-value">Budi Santoso, ST</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Bendahara</span><span class="info-value">H. M. Mansur</span>
+                        </div>
+                    </div>
+
+                    <div class="info-slide">
+                        <div class="section-label">Laporan Keuangan</div>
+                        <div class="info-row">
+                            <span class="info-label">Saldo Awal</span><span class="info-value">Rp 15.000.000</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Pemasukan</span><span class="info-value">Rp 5.500.000</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Pengeluaran</span><span class="info-value">Rp 2.150.000</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Saldo Akhir</span><span class="info-value">Rp 18.350.000</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Tanggal Update</span><span class="info-value">10 Maret 2026</span>
+                        </div>
+                    </div>
+
+                    <div class="info-slide">
+                        <div class="section-label">Ayat & Hadits Pilihan</div>
+                        <div
+                            style="font-size: 1.2rem; text-align: right; margin: 1vh 0; color: var(--primary-green); font-weight: bold; font-family: 'Times New Roman', serif;">
+                            إِنَّ الصَّلَاةَ تَنْهَىٰ عَنِ الْفَحْشَاءِ وَالْمُنْكَرِ
+                        </div>
+                        <div
+                            style="font-size: 0.75rem; text-align: justify; color: var(--text-muted); line-height: 1.4;">
+                            "Sesungguhnya shalat itu mencegah dari (perbuatan- perbuatan) keji dan mungkar."<br>
+                            <strong>(QS. Al-Ankabut: 45)</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="prayer-footer" id="prayer-list"></div>
+
+        <div class="finance-section">
+            <marquee scrollamount="5">
+                <span class="mx-5">● <b>Laporan Keuangan:</b> Saldo Kas Rp 18.350.000 (Per 20
+                    Feb)</span>
+                <span class="mx-5">● <b>Agenda:</b> Kajian Ahad Pagi bersama Ust. Dr. Malik Aris di
+                    Ruang Utama</span>
+                <span class="mx-5">● Mohon menonaktifkan suara handphone saat memasuki area
+                    Shalat</span>
+                <span class="mx-5">● Jagalah kebersihan Masjid adalah sebagian dari Iman</span>
+            </marquee>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN SHOLAT OVERLAY -->
+    <div class="sholat-overlay" id="sholat-overlay">
+        <div class="sholat-overlay-title" id="sholat-title">SHOLAT BERLANGSUNG</div>
+        <div class="sholat-overlay-timer" id="sholat-timer">00:00</div>
+        <div class="sholat-overlay-verse-ar">إِنَّ الصَّلَاةَ تَنْهَىٰ عَنِ الْفَحْشَاءِ وَالْمُنْكَرِ</div>
+        <div class="sholat-overlay-verse-id">"Sesungguhnya shalat itu mencegah dari (perbuatan- perbuatan) keji dan
+            mungkar." (QS. Al-Ankabut: 45)</div>
+        <div class="sholat-overlay-message">MOHON NONAKTIFKAN HANDPHONE DAN LURUSKAN SHAF</div>
+    </div>
+    <script>
+        // 1. Ambil Parameter dari URL secara Dinamis
+        const urlParams = new URLSearchParams(window.location.search);
+        const LAT = urlParams.get('lat') || "-7.466984";
+        const LNG = urlParams.get('long') || "112.717135";
+        const TARGET_DATE = urlParams.get('date') || "2026-03-10";
+
+        let currentJadwal = {};
+
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                const clockEl = document.getElementById("digital-clock");
+                if (clockEl) {
+                    clockEl.innerHTML =
+                        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}<span>:${String(now.getSeconds()).padStart(2, "0")}</span>`;
+                }
+                updateCountdown();
+            }, 1000);
+        }
+
+
+        async function updateDates() {
+            try {
+                const res = await fetch("https://api.myquran.com/v3/cal/today");
+                const r = await res.json();
+                if (r.status) {
+                    document.getElementById("hijri-date").innerText =
+                        `${r.data.hijr.day} ${r.data.hijr.monthName} ${r.data.hijr.year} H`;
+                    document.getElementById("masehi-date").innerText = r.data.ce.today;
+                }
+            } catch (e) {
+                console.error("Date Error");
+            }
+        }
+
+        // 2. AMBIL DATA DARI KHGT (Format JSON)
+        async function getPrayerTimes() {
+            try {
+                const targetUrl = `https://khgt.muhammadiyah.or.id/prayer?lat=${LAT}&long=${LNG}&date=${TARGET_DATE}`;
+                // Menggunakan Proxy AllOrigins untuk akses JSON
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+                const response = await fetch(proxyUrl);
+                const result = await response.json();
+
+                // Parse data string JSON dari AllOrigins
+                const data = JSON.parse(result.contents);
+                const t = data.times;
+
+                // Mapping data & Hitung Imsak/Dhuha secara dinamis
+                const subuhDate = new Date(`${TARGET_DATE}T${t.subuh}`);
+                const imsakDate = new Date(subuhDate.getTime() - 10 * 60000);
+
+                const terbitDate = new Date(`${TARGET_DATE}T${t.terbit}`);
+                const dhuhaDate = new Date(terbitDate.getTime() + 25 * 60000);
+
+                currentJadwal = {
+                    imsak: imsakDate.toTimeString().split(' ')[0].substring(0, 5),
+                    subuh: t.subuh,
+                    terbit: t.terbit,
+                    dhuha: dhuhaDate.toTimeString().split(' ')[0].substring(0, 5),
+                    dzuhur: t.zuhur, // Menyesuaikan 'zuhur' dari JSON KHGT
+                    ashar: t.ashar,
+                    maghrib: t.maghrib,
+                    isya: t.isya
+                };
+
+                renderSholat(currentJadwal);
+
+            } catch (e) {
+                console.error("Gagal mengambil JSON KHGT:", e);
+                // Fallback jika API bermasalah
+                currentJadwal = {
+                    imsak: "04:16", subuh: "04:26", terbit: "05:31",
+                    dhuha: "05:56", dzuhur: "11:41", ashar: "14:48",
+                    maghrib: "17:47", isya: "18:56"
+                };
+                renderSholat(currentJadwal);
+            }
+        }
+
+        function renderSholat(j) {
+            const list = [
+                { id: "imsak", n: "Imsak", t: j.imsak },
+                { id: "subuh", n: "Subuh", t: j.subuh },
+                { id: "terbit", n: "Terbit", t: j.terbit },
+                { id: "dhuha", n: "Dhuha", t: j.dhuha },
+                { id: "dzuhur", n: "Dzuhur", t: j.dzuhur },
+                { id: "ashar", n: "Ashar", t: j.ashar },
+                { id: "maghrib", n: "Maghrib", t: j.maghrib },
+                { id: "isya", n: "Isya", t: j.isya },
+            ];
+
+            const container = document.getElementById("prayer-list");
+            if (!container) return;
+
+            container.innerHTML = list.map(s => `
+            <div class="prayer-box" id="box-${s.id}" data-time="${s.t}">
+              <div class="prayer-name">${s.n}</div>
+              <div class="prayer-time-row">
+                <div class="prayer-time">${s.t}</div>
+                <div class="countdown-area"></div>
+              </div>
+            </div>
+        `).join("");
+        }
+
+        function updateCountdown() {
+            if (!currentJadwal.imsak) return;
+
+            const now = new Date();
+            const checkIds = ["subuh", "dzuhur", "ashar", "maghrib", "isya"];
+            let next = null;
+
+            for (let id of checkIds) {
+                const [h, m] = currentJadwal[id].split(":");
+                const target = new Date();
+                target.setHours(parseInt(h), parseInt(m), 0, 0);
+
+                let iqomahDuration = (id === "subuh" || id === "isya") ? 15 : 10;
+                if (id === "dzuhur") iqomahDuration = 15;
+
+                const adzanStart = new Date(target.getTime());
+                const iqomahEnd = new Date(target.getTime() + (iqomahDuration * 60000));
+                const sholatEnd = new Date(iqomahEnd.getTime() + (15 * 60000));
+
+                if (now < sholatEnd) {
+                    next = { id, target, adzanStart, iqomahEnd, sholatEnd };
+                    break;
+                }
+            }
+
+            const footer = document.getElementById("prayer-list");
+            if (!next || !footer) return;
+
+            let phase = "normal";
+            let diff = next.adzanStart - now;
+
+            if (now < next.adzanStart) {
+                if (diff <= 10 * 60000) phase = "pre-adzan";
+            } else if (now < next.iqomahEnd) {
+                phase = "iqomah";
+                diff = next.iqomahEnd - now;
+            } else if (now < next.sholatEnd) {
+                phase = "sholat";
+                diff = next.sholatEnd - now;
+            }
+
+            const formatTime = (ms) => {
+                const s = Math.floor(ms / 1000);
+                return `-${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+            };
+
+            const timeStr = formatTime(diff);
+
+            if (phase === "normal") {
+                const overlay = document.getElementById("sholat-overlay");
+                if (overlay) overlay.classList.remove("active");
+                if (!footer.querySelector(".prayer-box")) renderSholat(currentJadwal);
+
+                document.querySelectorAll(".prayer-box").forEach(b => {
+                    b.classList.remove("next", "past");
+                    const [hh, mm] = b.getAttribute("data-time").split(":").map(Number);
+                    const sched = new Date();
+                    sched.setHours(hh, mm, 0, 0);
+                    if (sched <= now) b.classList.add("past");
+                });
+
+                const box = document.getElementById(`box-${next.id}`);
+                if (box) {
+                    box.classList.add("next");
+                    const area = box.querySelector(".countdown-area");
+                    if (area) area.innerHTML = `<span class="countdown-tag">${timeStr}</span>`;
+                }
+            } else {
+                const titles = {
+                    "pre-adzan": `MENUJU ADZAN ${next.id.toUpperCase()}`,
+                    "iqomah": `MENUJU IQOMAH ${next.id.toUpperCase()}`,
+                    "sholat": `SHOLAT ${next.id.toUpperCase()} SEDANG BERLANGSUNG`
+                };
+
+                footer.innerHTML = `
+                <div class="prayer-banner ${phase}-prep">
+                    <div class="banner-title">${titles[phase]}</div>
+                    <div class="banner-time">${timeStr}</div>
+                </div>
+            `;
+
+                if (phase === "sholat") {
+                    const ov = document.getElementById("sholat-overlay");
+                    if (ov) {
+                        ov.classList.add("active");
+                        document.getElementById("sholat-title").innerText = titles["sholat"];
+                        document.getElementById("sholat-timer").innerText = timeStr.replace("-", "");
+                    }
+                }
+            }
+        }
+
+        startClock();
+        updateDates();
+        getPrayerTimes();
+    </script>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let slideIdx = 0;
+        let slides;
+        let progressBar;
+        let slideDuration = 30000;
+        let player;
+        let isVideo = false;
+        let slideTimeout = null;
+
+        function onYouTubeIframeAPIReady() {
+            // API Loaded, initialize the first active slide if it's a video
+            const activeSlide = document.querySelector(".slider-item.active");
+            if (activeSlide && (activeSlide.id === "yt-player-1" || activeSlide.id === "yt-player-2" || activeSlide.tagName === "IFRAME")) {
+                playVideoSlide(activeSlide);
+            }
+        }
+
+        function playVideoSlide(element) {
+            const videoId = element.getAttribute("data-videoid");
+            const isLive = element.getAttribute("data-islive");
+
+            if (!videoId && element.tagName !== "IFRAME") return; // Keep going if it's already an iframe from a past API call
+
+            if (player) {
+                player.destroy();
+            }
+
+            // Recreate player directly on the container. YouTube API will replace the div with an iframe
+            player = new YT.Player(element.id, {
+                videoId: videoId || null, // if already an iframe, videoId config is ignored
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'rel': 0,
+                    'showinfo': 0,
+                    'mute': 1,      // Start muted to bypass autoplay policy
+                    'enablejsapi': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+
+            // Since API replaces DIV with IFRAME but keeps ID, we re-query reference safely
+            setTimeout(() => {
+                const newFrame = document.getElementById(element.id);
+                if (newFrame) {
+                    newFrame.classList.add('slider-item', 'active');
+                    if (isLive === "true") newFrame.setAttribute("data-islive", "true");
+                }
+            }, 500);
+        }
+
+        function onPlayerReady(event) {
+            if (event && event.target && typeof event.target.playVideo === 'function') {
+                event.target.playVideo();
+            }
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                // Setelah video biasa selesai, lanjut ke slide berikutnya
+                nextSlide();
+            }
+            if (event.data === YT.PlayerState.PLAYING) {
+                isVideo = true;
+                progressBar.style.transition = "none";
+                progressBar.style.width = "0%";
+
+                const currentElt = document.querySelector(".slider-item.active");
+                const isLiveStr = currentElt ? currentElt.getAttribute("data-islive") : "false";
+
+                if (isLiveStr === "true") {
+                    // Live streaming is shown for 3 minutes (180000 ms)
+                    const liveDuration = 180000;
+                    startProgress(liveDuration);
+                    if (slideTimeout) clearTimeout(slideTimeout);
+                    slideTimeout = setTimeout(nextSlide, liveDuration);
+                } else {
+                    // Standard video duration logic
+                    setTimeout(() => {
+                        let duration = player.getDuration();
+                        // API will return 0 if it's a true live stream without a set end time, but we fallback
+                        if (duration > 0) {
+                            startProgress(duration * 1000);
+                        }
+                    }, 500);
+                }
+            }
+        }
+
+        function startProgress(duration) {
+            progressBar.style.transition = "none";
+            progressBar.style.width = "0%";
+            // Allow browser to register reset before animating
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    progressBar.style.transition = `width ${duration}ms linear`;
+                    progressBar.style.width = "100%";
+                });
+            });
+        }
+
+        function nextSlide() {
+            // Bersihkan timeout jika ada
+            if (slideTimeout) {
+                clearTimeout(slideTimeout);
+                slideTimeout = null;
+            }
+            slides[slideIdx].classList.remove("active");
+            slideIdx = (slideIdx + 1) % slides.length;
+            slides[slideIdx].classList.add("active");
+            const current = slides[slideIdx];
+            // Jika slide adalah gambar, auto next setelah durasi
+            if (current.tagName === "IMG") {
+                isVideo = false;
+
+                // Pause if player exists from previous slide
+                if (player && typeof player.pauseVideo === 'function') {
+                    player.pauseVideo();
+                }
+
+                startProgress(slideDuration);
+                slideTimeout = setTimeout(nextSlide, slideDuration);
+            } else if (current.id === "yt-player-1" || current.id === "yt-player-2" || current.tagName === "IFRAME") {
+                isVideo = true;
+
+                if (player && current.tagName === "IFRAME") {
+                    // Hanya ulangi waktu jika bukan live stream
+                    if (current.getAttribute("data-islive") !== "true") {
+                        player.seekTo(0);
+                    }
+                    player.playVideo();
+                } else {
+                    // Buat instance API player baru
+                    playVideoSlide(current);
+                }
+            }
+        }
+
+        function initSlider() {
+            slides = Array.from(document.querySelectorAll(".slider-item"));
+            progressBar = document.getElementById("sliderProgress");
+
+            const activeSlide = slides[slideIdx];
+            // Mulai slide pertama
+            if (activeSlide.tagName === "IMG") {
+                startProgress(slideDuration);
+                slideTimeout = setTimeout(nextSlide, slideDuration);
+            } else if (activeSlide.id === "yt-player-1" || activeSlide.id === "yt-player-2" || activeSlide.tagName === "IFRAME") {
+                // Handle in onYouTubeIframeAPIReady 
+            }
+        }
+
+        // Tambahkan progress bar ke slider jika belum ada
+        window.addEventListener("DOMContentLoaded", () => {
+            const slider = document.getElementById("slider");
+            if (!document.getElementById("sliderProgress")) {
+                const bar = document.createElement("div");
+                bar.id = "sliderProgress";
+                bar.className = "slider-progress";
+                slider.appendChild(bar);
+            }
+            initSlider();
+        });
+
+        /* AUTO FULLSCREEN TIAP 3 MENIT */
+        setInterval(() => {
+            // Hanya lakukan auto-fullscreen untuk konten biasa jika sedang tidak ada overlay sholat
+            const sholatOverlay = document.getElementById("sholat-overlay");
+            if (sholatOverlay && sholatOverlay.classList.contains("active")) {
+                return; // Jangan ganggu fullscreen saat sholat
+            }
+
+            const sliderEl = document.getElementById("slider");
+            const appContainer = document.querySelector(".app-container");
+
+            sliderEl.classList.toggle("fullscreen");
+            appContainer.classList.toggle("fullscreen-active");
+        }, 180000); // 3 menit
+
+        /* INFO SLIDER LOGIC */
+        let infoSlideIdx = 0;
+        const infoSlides = document.querySelectorAll(".info-slide");
+        if (infoSlides.length > 0) {
+            setInterval(() => {
+                infoSlides[infoSlideIdx].classList.remove("active");
+                infoSlideIdx = (infoSlideIdx + 1) % infoSlides.length;
+                infoSlides[infoSlideIdx].classList.add("active");
+            }, 60000); // 1 menit
+        }
+
+        /* DATE SLIDER LOGIC */
+        let dateSlideIdx = 0;
+        const dateSlides = document.querySelectorAll(".date-badge");
+        if (dateSlides.length > 0) {
+            setInterval(() => {
+                dateSlides[dateSlideIdx].classList.remove("active");
+                dateSlideIdx = (dateSlideIdx + 1) % dateSlides.length;
+                dateSlides[dateSlideIdx].classList.add("active");
+            }, 15000); // 15 detik
+        }
+    </script>
+</body>
+
+</html>
