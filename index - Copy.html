@@ -1,16 +1,9 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart TV Masjid An-Nur - Sidoarjo</title>
-    <meta name="theme-color" content="#064e3b" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Masjid TV" />
-    <link rel="icon" href="icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="icon.svg" />
-    <link rel="manifest" href="manifest.webmanifest" />
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet" />
@@ -310,7 +303,8 @@
         justify-content: center;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 0.8vh 1.5vh rgba(6, 78, 59, 0.05),
+        box-shadow:
+          0 0.8vh 1.5vh rgba(6, 78, 59, 0.05),
           inset 0 0 20px rgba(255, 255, 255, 0.5);
       }
 
@@ -330,13 +324,6 @@
         color: var(--primary-green);
         line-height: 1;
         z-index: 2;
-      }
-
-      .prayer-time-compare {
-        font-size: 0.72rem;
-        color: var(--text-muted);
-        line-height: 1.3;
-        text-align: center;
       }
 
       .prayer-time-row {
@@ -372,10 +359,6 @@
       .prayer-box.next .prayer-time {
         color: #fff !important;
         text-shadow: 0 0.2vh 0.4vh rgba(0, 0, 0, 0.2);
-      }
-
-      .prayer-box.next .prayer-time-compare {
-        color: rgba(255, 255, 255, 0.92);
       }
 
       .countdown-tag {
@@ -559,62 +542,6 @@
         backdrop-filter: blur(4px);
         box-shadow: 0 -0.5vh 2vh rgba(0, 0, 0, 0.5);
       }
-
-      .pwa-install-popup {
-        position: fixed;
-        right: 1.2vw;
-        bottom: 6.5vh;
-        z-index: 10001;
-        width: min(92vw, 360px);
-        background: #ffffff;
-        border: 1px solid #cbd5e1;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.2);
-        padding: 14px;
-        display: none;
-      }
-
-      .pwa-install-popup.active {
-        display: block;
-      }
-
-      .pwa-install-title {
-        font-size: 1rem;
-        font-weight: 800;
-        color: #064e3b;
-        margin-bottom: 6px;
-      }
-
-      .pwa-install-text {
-        font-size: 0.85rem;
-        color: #475569;
-        margin-bottom: 10px;
-      }
-
-      .pwa-install-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-      }
-
-      .pwa-btn {
-        border: 0;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 0.8rem;
-        padding: 8px 12px;
-        cursor: pointer;
-      }
-
-      .pwa-btn-secondary {
-        background: #e2e8f0;
-        color: #334155;
-      }
-
-      .pwa-btn-primary {
-        background: #064e3b;
-        color: #ffffff;
-      }
     </style>
   </head>
 
@@ -622,7 +549,23 @@
     <div class="app-container">
       <div class="content-area">
         <div class="slider-container" id="slider">
-          <img class="slider-item active" src="1.jpg" />
+          <!-- Regular Video -->
+          <div
+            class="slider-item active"
+            id="yt-player-1"
+            data-videoid="F8121v_ER9M"
+            data-islive="false"></div>
+          <!-- Live Stream Video -->
+          <div
+            class="slider-item"
+            id="yt-player-2"
+            data-videoid="_w3UmWFbViQ"
+            data-islive="true"></div>
+          <img class="slider-item" src="1.jpg" />
+          <img class="slider-item" src="11.jpg" />
+          <img class="slider-item" src="2.jpg" />
+          <img class="slider-item" src="3.jpg" />
+          <img class="slider-item" src="4.jpg" />
         </div>
 
         <div class="qris-panel">
@@ -631,8 +574,8 @@
               00:00<span>:00</span>
             </div>
             <div class="masjid-title">
-              <h1 id="masjid-name">MASJID AN-NUR SIDOARJO</h1>
-              <div class="text-muted small" id="masjid-address">
+              <h1>MASJID AN-NUR SIDOARJO</h1>
+              <div class="text-muted small">
                 Jl. Mojopahit No.666, Celep, Kabupaten Sidoarjo Jawa Timur
               </div>
             </div>
@@ -653,17 +596,14 @@
           </div>
 
           <div class="qris-card">
-            <div
-              class="small fw-bold mb-2 text-uppercase text-muted"
-              id="qris-title">
+            <div class="small fw-bold mb-2 text-uppercase text-muted">
               Infaq & Sedekah
             </div>
             <img
               src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=DonasiMasjidAnNurSidoarjo"
               alt="QRIS"
-              id="qris-image"
               class="qris-img mb-2" />
-            <div class="small text-dark fw-bold" id="qris-caption">
+            <div class="small text-dark fw-bold">
               Scan QRIS a.n Masjid An-Nur
             </div>
           </div>
@@ -673,31 +613,25 @@
               <div class="section-label">Informasi Masjid</div>
               <div class="info-row">
                 <span class="info-label">ID Masjid</span
-                ><span class="info-value" id="info-mosque-id">MNR-SDA01</span>
+                ><span class="info-value">MNR-SDA01</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Kapasitas</span
-                ><span class="info-value" id="info-capacity">800 Jamaah</span>
+                ><span class="info-value">800 Jamaah</span>
               </div>
 
               <div class="section-label">Susunan Takmir</div>
               <div class="info-row">
                 <span class="info-label">Ketua</span
-                ><span class="info-value" id="info-chairman"
-                  >H. Ahmad Fulan</span
-                >
+                ><span class="info-value">H. Ahmad Fulan</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Sekretaris</span
-                ><span class="info-value" id="info-secretary"
-                  >Budi Santoso, ST</span
-                >
+                ><span class="info-value">Budi Santoso, ST</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Bendahara</span
-                ><span class="info-value" id="info-treasurer"
-                  >H. M. Mansur</span
-                >
+                ><span class="info-value">H. M. Mansur</span>
               </div>
             </div>
 
@@ -705,29 +639,23 @@
               <div class="section-label">Laporan Keuangan</div>
               <div class="info-row">
                 <span class="info-label">Saldo Awal</span
-                ><span class="info-value" id="info-balance-start"
-                  >Rp 15.000.000</span
-                >
+                ><span class="info-value">Rp 15.000.000</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Pemasukan</span
-                ><span class="info-value" id="info-income">Rp 5.500.000</span>
+                ><span class="info-value">Rp 5.500.000</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Pengeluaran</span
-                ><span class="info-value" id="info-expense">Rp 2.150.000</span>
+                ><span class="info-value">Rp 2.150.000</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Saldo Akhir</span
-                ><span class="info-value" id="info-balance-end"
-                  >Rp 18.350.000</span
-                >
+                ><span class="info-value">Rp 18.350.000</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Tanggal Update</span
-                ><span class="info-value" id="info-balance-updated-at"
-                  >10 Maret 2026</span
-                >
+                ><span class="info-value">10 Maret 2026</span>
               </div>
             </div>
 
@@ -740,7 +668,7 @@
                   margin: 1vh 0;
                   color: var(--primary-green);
                   font-weight: bold;
-                  font-family: 'Times New Roman', serif;
+                  font-family: &quot;Times New Roman&quot;, serif;
                 ">
                 إِنَّ الصَّلَاةَ تَنْهَىٰ عَنِ الْفَحْشَاءِ وَالْمُنْكَرِ
               </div>
@@ -763,8 +691,22 @@
       <div class="prayer-footer" id="prayer-list"></div>
 
       <div class="finance-section">
-        <marquee scrollamount="5" id="running-text-marquee">
-          <span class="mx-5">● Memuat informasi...</span>
+        <marquee scrollamount="5">
+          <span class="mx-5"
+            >● <b>Laporan Keuangan:</b> Saldo Kas Rp 18.350.000 (Per 20
+            Feb)</span
+          >
+          <span class="mx-5"
+            >● <b>Agenda:</b> Kajian Ahad Pagi bersama Ust. Dr. Malik Aris di
+            Ruang Utama</span
+          >
+          <span class="mx-5"
+            >● Mohon menonaktifkan suara handphone saat memasuki area
+            Shalat</span
+          >
+          <span class="mx-5"
+            >● Jagalah kebersihan Masjid adalah sebagian dari Iman</span
+          >
         </marquee>
       </div>
     </div>
@@ -786,203 +728,16 @@
         MOHON NONAKTIFKAN HANDPHONE DAN LURUSKAN SHAF
       </div>
     </div>
-    <div class="pwa-install-popup" id="pwa-install-popup">
-      <div class="pwa-install-title">Install Aplikasi Masjid TV</div>
-      <div class="pwa-install-text">
-        Pasang aplikasi agar akses lebih cepat dan bisa dibuka seperti app.
-      </div>
-      <div class="pwa-install-actions">
-        <button class="pwa-btn pwa-btn-secondary" id="pwa-later-btn">
-          Nanti
-        </button>
-        <button class="pwa-btn pwa-btn-primary" id="pwa-install-btn">
-          Install
-        </button>
-      </div>
-    </div>
 
     <script>
-      let LOKASI_ID = "cfa0860e83a4c3a763a7e62d825349f7";
+      const LOKASI_ID = "cfa0860e83a4c3a763a7e62d825349f7";
       let currentJadwal = {};
-      let jadwalPemerintah = {};
-      let jadwalMuhammadiyah = {};
-      let activePrayerSource = "pemerintah";
-      const textDbDefaults = {
-        locationId: "cfa0860e83a4c3a763a7e62d825349f7",
-        masjidName: "MASJID AN-NUR SIDOARJO",
-        masjidAddress:
-          "Jl. Mojopahit No.666, Celep, Kabupaten Sidoarjo Jawa Timur",
-        qrisTitle: "Infaq & Sedekah",
-        qrisImageUrl:
-          "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=DonasiMasjidAnNurSidoarjo",
-        qrisCaption: "Scan QRIS a.n Masjid An-Nur",
-        mosqueId: "MNR-SDA01",
-        capacity: "800 Jamaah",
-        chairman: "H. Ahmad Fulan",
-        secretary: "Budi Santoso, ST",
-        treasurer: "H. M. Mansur",
-        balanceStart: "Rp 15.000.000",
-        income: "Rp 5.500.000",
-        expense: "Rp 2.150.000",
-        balanceEnd: "Rp 18.350.000",
-        balanceUpdatedAt: "10 Maret 2026",
-        runningTexts: [
-          "<b>Laporan Keuangan:</b> Saldo Kas Rp 18.350.000 (Per 20 Feb)",
-          "<b>Agenda:</b> Kajian Ahad Pagi bersama Ust. Dr. Malik Aris di Ruang Utama",
-          "Mohon menonaktifkan suara handphone saat memasuki area Shalat",
-          "Jagalah kebersihan Masjid adalah sebagian dari Iman",
-        ],
-        regularVideoId: "F8121v_ER9M",
-        liveVideoId: "_XgE09RZsB8",
-        slides: [
-          { type: "youtube", value: "F8121v_ER9M", isLive: false },
-          { type: "youtube", value: "_XgE09RZsB8", isLive: true },
-          { type: "image", value: "1.jpg" },
-          { type: "image", value: "11.jpg" },
-          { type: "image", value: "2.jpg" },
-          { type: "image", value: "3.jpg" },
-          { type: "image", value: "4.jpg" },
-        ],
-        iqomahDurations: {
-          subuh: 25,
-          dzuhur: 25,
-          ashar: 5,
-          maghrib: 20,
-          isya: 25,
-        },
-        prayerProvider: "pemerintah",
-        khgt: {
-          lat: -7.4467,
-          lng: 112.7181,
-        },
-      };
-
-      let textDbConfig = { ...textDbDefaults };
-
-      function setText(id, value) {
-        const el = document.getElementById(id);
-        if (el && typeof value === "string" && value.trim()) {
-          el.textContent = value;
-        }
-      }
-
-      function setHtml(id, value) {
-        const el = document.getElementById(id);
-        if (el && typeof value === "string" && value.trim()) {
-          el.innerHTML = value;
-        }
-      }
-
-      function applyTextDbToPage() {
-        LOKASI_ID = textDbConfig.locationId || textDbDefaults.locationId;
-        setText("masjid-name", textDbConfig.masjidName);
-        setText("masjid-address", textDbConfig.masjidAddress);
-        setText("qris-title", textDbConfig.qrisTitle);
-        setText("qris-caption", textDbConfig.qrisCaption);
-        setText("info-mosque-id", textDbConfig.mosqueId);
-        setText("info-capacity", textDbConfig.capacity);
-        setText("info-chairman", textDbConfig.chairman);
-        setText("info-secretary", textDbConfig.secretary);
-        setText("info-treasurer", textDbConfig.treasurer);
-        setText("info-balance-start", textDbConfig.balanceStart);
-        setText("info-income", textDbConfig.income);
-        setText("info-expense", textDbConfig.expense);
-        setText("info-balance-end", textDbConfig.balanceEnd);
-        setText("info-balance-updated-at", textDbConfig.balanceUpdatedAt);
-
-        const qrisImage = document.getElementById("qris-image");
-        if (qrisImage && textDbConfig.qrisImageUrl) {
-          qrisImage.src = textDbConfig.qrisImageUrl;
-        }
-
-        // Backward compatibility: jika slides belum diisi, pakai regular/live lama.
-        if (
-          !Array.isArray(textDbConfig.slides) ||
-          textDbConfig.slides.length === 0
-        ) {
-          textDbConfig.slides = [
-            {
-              type: "youtube",
-              value:
-                textDbConfig.regularVideoId || textDbDefaults.regularVideoId,
-              isLive: false,
-            },
-            {
-              type: "youtube",
-              value: textDbConfig.liveVideoId || textDbDefaults.liveVideoId,
-              isLive: true,
-            },
-            { type: "image", value: "1.jpg" },
-            { type: "image", value: "11.jpg" },
-            { type: "image", value: "2.jpg" },
-            { type: "image", value: "3.jpg" },
-            { type: "image", value: "4.jpg" },
-          ];
-        }
-
-        const runningTextItems = Array.isArray(textDbConfig.runningTexts)
-          ? textDbConfig.runningTexts
-          : [];
-        const marquee = document.getElementById("running-text-marquee");
-        if (marquee && runningTextItems.length > 0) {
-          marquee.innerHTML = runningTextItems
-            .map((item) => `<span class="mx-5">● ${item}</span>`)
-            .join("");
-        }
-
-        renderSlidesFromDatabase();
-      }
-
-      function renderSlidesFromDatabase() {
-        const slider = document.getElementById("slider");
-        if (!slider) return;
-
-        const slideConfigs = Array.isArray(textDbConfig.slides)
-          ? textDbConfig.slides
-          : [];
-
-        const itemsHtml = slideConfigs
-          .map((slide, idx) => {
-            const isActive = idx === 0 ? " active" : "";
-            if (slide.type === "youtube" && slide.value) {
-              const isLive = slide.isLive ? "true" : "false";
-              return `<div class="slider-item${isActive}" id="yt-slide-${idx}" data-type="youtube" data-videoid="${slide.value}" data-islive="${isLive}"></div>`;
-            }
-            if (slide.type === "image" && slide.value) {
-              return `<img class="slider-item${isActive}" data-type="image" src="${slide.value}" />`;
-            }
-            return "";
-          })
-          .join("");
-
-        slider.innerHTML =
-          itemsHtml ||
-          `<img class="slider-item active" src="1.jpg" data-type="image" />`;
-      }
-
-      async function loadTextDatabase() {
-        try {
-          const res = await fetch("db.php");
-          if (!res.ok) return;
-          const db = await res.json();
-          textDbConfig = {
-            ...textDbDefaults,
-            ...(db.settings || {}),
-          };
-        } catch (e) {
-          console.error("Text DB Error");
-        }
-      }
 
       function startClock() {
         setInterval(() => {
           const now = new Date();
-          document.getElementById("digital-clock").innerHTML = `${String(
-            now.getHours()
-          ).padStart(2, "0")}:${String(now.getMinutes()).padStart(
-            2,
-            "0"
-          )}<span>:${String(now.getSeconds()).padStart(2, "0")}</span>`;
+          document.getElementById("digital-clock").innerHTML =
+            `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}<span>:${String(now.getSeconds()).padStart(2, "0")}</span>`;
           updateCountdown();
         }, 1000);
       }
@@ -992,9 +747,8 @@
           const res = await fetch("https://api.myquran.com/v3/cal/today");
           const r = await res.json();
           if (r.status) {
-            document.getElementById(
-              "hijri-date"
-            ).innerText = `${r.data.hijr.day} ${r.data.hijr.monthName} ${r.data.hijr.year} H`;
+            document.getElementById("hijri-date").innerText =
+              `${r.data.hijr.day} ${r.data.hijr.monthName} ${r.data.hijr.year} H`;
             document.getElementById("masehi-date").innerText = r.data.ce.today;
           }
         } catch (e) {
@@ -1002,139 +756,44 @@
         }
       }
 
-      function getTodayDateYmd() {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(d.getDate()).padStart(2, "0")}`;
-      }
-
-      function normalizeTimeText(timeText) {
-        if (!timeText || typeof timeText !== "string") return "";
-        return timeText.replace(/\./g, ":").trim().substring(0, 5);
-      }
-
-      async function getPrayerTimesPemerintah() {
-        const key = getTodayDateYmd();
-        const res = await fetch(
-          `https://api.myquran.com/v3/sholat/jadwal/${LOKASI_ID}/${key}`
-        );
-        const r = await res.json();
-        if (!r.status) {
-          throw new Error("Response pemerintah tidak valid");
-        }
-        return r.data.jadwal[key];
-      }
-
-      async function getPrayerTimesMuhammadiyah() {
-        const dateYmd = getTodayDateYmd();
-        const lat =
-          textDbConfig?.khgt?.lat !== undefined
-            ? textDbConfig.khgt.lat
-            : textDbDefaults.khgt.lat;
-        const lng =
-          textDbConfig?.khgt?.lng !== undefined
-            ? textDbConfig.khgt.lng
-            : textDbDefaults.khgt.lng;
-
-        const proxyRes = await fetch(
-          `khgt-proxy.php?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(
-            lng
-          )}&date=${encodeURIComponent(dateYmd)}`
-        );
-        if (!proxyRes.ok) {
-          throw new Error("Proxy KHGT gagal");
-        }
-        const proxyJson = await proxyRes.json();
-        if (!proxyJson.ok || !proxyJson.data) {
-          throw new Error("Data KHGT dari proxy tidak valid");
-        }
-        const data = proxyJson.data;
-
-        const t = data.times || {};
-
-        const subuh = normalizeTimeText(t.subuh);
-        const terbit = normalizeTimeText(t.terbit);
-        const dzuhur = normalizeTimeText(t.zuhur || t.dzuhur);
-        const ashar = normalizeTimeText(t.ashar);
-        const maghrib = normalizeTimeText(t.maghrib);
-        const isya = normalizeTimeText(t.isya);
-
-        if (!subuh || !terbit || !dzuhur || !ashar || !maghrib || !isya) {
-          throw new Error("Response KHGT tidak lengkap");
-        }
-
-        const subuhDate = new Date(`${dateYmd}T${subuh}`);
-        const imsakDate = new Date(subuhDate.getTime() - 10 * 60000);
-        const terbitDate = new Date(`${dateYmd}T${terbit}`);
-        const dhuhaDate = new Date(terbitDate.getTime() + 25 * 60000);
-
-        return {
-          imsak: imsakDate.toTimeString().substring(0, 5),
-          subuh,
-          terbit,
-          dhuha: dhuhaDate.toTimeString().substring(0, 5),
-          dzuhur,
-          ashar,
-          maghrib,
-          isya,
-        };
-      }
-
       async function getPrayerTimes() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const queryA = (urlParams.get("a") || "").toLowerCase();
-        const providerFromQuery =
-          queryA === "mu" ? "muhammadiyah" : queryA === "nu" ? "pemerintah" : "";
+        const d = new Date();
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        try {
+          const res = await fetch(
+            `https://api.myquran.com/v3/sholat/jadwal/${LOKASI_ID}/${key}`,
+          );
+          const r = await res.json();
+          if (r.status) {
+            currentJadwal = r.data.jadwal[key];
 
-        const provider = (providerFromQuery ||
-          textDbConfig.prayerProvider ||
-          "pemerintah")
-          .toString()
-          .toLowerCase();
-        activePrayerSource = provider;
-        const [govResult, muhResult] = await Promise.allSettled([
-          getPrayerTimesPemerintah(),
-          getPrayerTimesMuhammadiyah(),
-        ]);
+            /* =========================================================
+             MODE UJI COBA (Tweak waktu Dzuhur menjadi 2 menit dari sekarang)
+             Nanti Anda bisa hapus baris uji coba ini.
+             ========================================================= */
+            // const testTime = new Date(Date.now() + 1 * 60000); // 2 menit dari sekarang
+            // const hh = String(testTime.getHours()).padStart(2, "0");
+            // const mm = String(testTime.getMinutes()).padStart(2, "0");
+            // currentJadwal.dzuhur = `${hh}:${mm}`;
+            /* ========================================================= */
 
-        jadwalPemerintah =
-          govResult.status === "fulfilled" ? govResult.value : {};
-        jadwalMuhammadiyah =
-          muhResult.status === "fulfilled" ? muhResult.value : {};
-
-        if (provider === "muhammadiyah") {
-          currentJadwal = Object.keys(jadwalMuhammadiyah).length
-            ? jadwalMuhammadiyah
-            : jadwalPemerintah;
-        } else {
-          currentJadwal = Object.keys(jadwalPemerintah).length
-            ? jadwalPemerintah
-            : jadwalMuhammadiyah;
+            renderSholat(currentJadwal);
+          }
+        } catch (e) {
+          console.error("Prayer API Error");
         }
-
-        if (!Object.keys(currentJadwal).length) {
-          console.error("Prayer API Error: pemerintah & muhammadiyah gagal");
-          return;
-        }
-
-        renderSholat(currentJadwal);
       }
 
       function renderSholat(j) {
-        const getGov = (id) => jadwalPemerintah?.[id] || "-";
-        const getMuh = (id) => jadwalMuhammadiyah?.[id] || "-";
-
         const list = [
-          { id: "imsak", n: "Imsak", t: j.imsak, g: getGov("imsak"), m: getMuh("imsak") },
-          { id: "subuh", n: "Subuh", t: j.subuh, g: getGov("subuh"), m: getMuh("subuh") },
-          { id: "terbit", n: "Terbit", t: j.terbit, g: getGov("terbit"), m: getMuh("terbit") },
-          { id: "dhuha", n: "Dhuha", t: j.dhuha, g: getGov("dhuha"), m: getMuh("dhuha") },
-          { id: "dzuhur", n: "Dzuhur", t: j.dzuhur, g: getGov("dzuhur"), m: getMuh("dzuhur") },
-          { id: "ashar", n: "Ashar", t: j.ashar, g: getGov("ashar"), m: getMuh("ashar") },
-          { id: "maghrib", n: "Maghrib", t: j.maghrib, g: getGov("maghrib"), m: getMuh("maghrib") },
-          { id: "isya", n: "Isya", t: j.isya, g: getGov("isya"), m: getMuh("isya") },
+          { id: "imsak", n: "Imsak", t: j.imsak },
+          { id: "subuh", n: "Subuh", t: j.subuh },
+          { id: "terbit", n: "Terbit", t: j.terbit },
+          { id: "dhuha", n: "Dhuha", t: j.dhuha },
+          { id: "dzuhur", n: "Dzuhur", t: j.dzuhur },
+          { id: "ashar", n: "Ashar", t: j.ashar },
+          { id: "maghrib", n: "Maghrib", t: j.maghrib },
+          { id: "isya", n: "Isya", t: j.isya },
         ];
         document.getElementById("prayer-list").innerHTML = list
           .map(
@@ -1146,7 +805,7 @@
                 <div class="countdown-area"></div>
               </div>
             </div>
-          `
+          `,
           )
           .join("");
         updateCountdown();
@@ -1163,12 +822,12 @@
           target.setHours(parseInt(h), parseInt(m), 0, 0);
 
           // Menentukan Durasi Iqomah berdasarkan waktu sholat
-          const iqomahMap =
-            textDbConfig.iqomahDurations || textDbDefaults.iqomahDurations;
-          let iqomahDuration = Number(iqomahMap[id]);
-          if (!Number.isFinite(iqomahDuration) || iqomahDuration <= 0) {
-            iqomahDuration = 10;
-          }
+          let iqomahDuration = 10;
+          if (id === "subuh") iqomahDuration = 25;
+          else if (id === "dzuhur") iqomahDuration = 25;
+          else if (id === "ashar") iqomahDuration = 20;
+          else if (id === "maghrib") iqomahDuration = 20;
+          else if (id === "isya") iqomahDuration = 25;
 
           // Define bounds for the phases
           const adzanStart = new Date(target.getTime());
@@ -1212,14 +871,8 @@
           const mm = Math.floor((ms % 3600000) / 60000);
           const ss = Math.floor((ms % 60000) / 1000);
           if (hh > 0)
-            return `-${String(hh).padStart(2, "0")}:${String(mm).padStart(
-              2,
-              "0"
-            )}:${String(ss).padStart(2, "0")}`;
-          return `-${String(mm).padStart(2, "0")}:${String(ss).padStart(
-            2,
-            "0"
-          )}`;
+            return `-${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+          return `-${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
         };
 
         const timeStr = formatTime(timeRemaining);
@@ -1302,13 +955,10 @@
         }
       }
 
-      async function bootstrapData() {
-        await loadTextDatabase();
-        applyTextDbToPage();
-        startClock();
-        updateDates();
-        getPrayerTimes();
-      }
+      // Slider Logic (Ganti Slide tiap 30 Detik)
+      startClock();
+      updateDates();
+      getPrayerTimes();
     </script>
 
     <script src="https://www.youtube.com/iframe_api"></script>
@@ -1320,20 +970,16 @@
       let player;
       let isVideo = false;
       let slideTimeout = null;
-      let ytApiReady = false;
-
-      function isYouTubeSlide(element) {
-        if (!element) return false;
-        if (element.getAttribute("data-type") === "youtube") return true;
-        if (element.tagName === "IFRAME") return true;
-        return false;
-      }
 
       function onYouTubeIframeAPIReady() {
-        ytApiReady = true;
         // API Loaded, initialize the first active slide if it's a video
         const activeSlide = document.querySelector(".slider-item.active");
-        if (activeSlide && isYouTubeSlide(activeSlide)) {
+        if (
+          activeSlide &&
+          (activeSlide.id === "yt-player-1" ||
+            activeSlide.id === "yt-player-2" ||
+            activeSlide.tagName === "IFRAME")
+        ) {
           playVideoSlide(activeSlide);
         }
       }
@@ -1370,7 +1016,6 @@
           const newFrame = document.getElementById(element.id);
           if (newFrame) {
             newFrame.classList.add("slider-item", "active");
-            newFrame.setAttribute("data-type", "youtube");
             if (isLive === "true") newFrame.setAttribute("data-islive", "true");
           }
         }, 500);
@@ -1443,10 +1088,7 @@
         slides[slideIdx].classList.add("active");
         const current = slides[slideIdx];
         // Jika slide adalah gambar, auto next setelah durasi
-        if (
-          current.getAttribute("data-type") === "image" ||
-          current.tagName === "IMG"
-        ) {
+        if (current.tagName === "IMG") {
           isVideo = false;
 
           // Pause if player exists from previous slide
@@ -1456,7 +1098,11 @@
 
           startProgress(slideDuration);
           slideTimeout = setTimeout(nextSlide, slideDuration);
-        } else if (isYouTubeSlide(current)) {
+        } else if (
+          current.id === "yt-player-1" ||
+          current.id === "yt-player-2" ||
+          current.tagName === "IFRAME"
+        ) {
           isVideo = true;
 
           if (player && current.tagName === "IFRAME") {
@@ -1467,12 +1113,7 @@
             player.playVideo();
           } else {
             // Buat instance API player baru
-            if (ytApiReady) {
-              playVideoSlide(current);
-            } else {
-              startProgress(slideDuration);
-              slideTimeout = setTimeout(nextSlide, slideDuration);
-            }
+            playVideoSlide(current);
           }
         }
       }
@@ -1480,27 +1121,23 @@
       function initSlider() {
         slides = Array.from(document.querySelectorAll(".slider-item"));
         progressBar = document.getElementById("sliderProgress");
-        slideIdx = 0;
-        if (!slides.length || !progressBar) return;
 
         const activeSlide = slides[slideIdx];
         // Mulai slide pertama
-        if (
-          activeSlide.getAttribute("data-type") === "image" ||
-          activeSlide.tagName === "IMG"
-        ) {
+        if (activeSlide.tagName === "IMG") {
           startProgress(slideDuration);
           slideTimeout = setTimeout(nextSlide, slideDuration);
-        } else if (isYouTubeSlide(activeSlide)) {
-          if (ytApiReady) {
-            playVideoSlide(activeSlide);
-          }
+        } else if (
+          activeSlide.id === "yt-player-1" ||
+          activeSlide.id === "yt-player-2" ||
+          activeSlide.tagName === "IFRAME"
+        ) {
+          // Handle in onYouTubeIframeAPIReady
         }
       }
 
-      // Tambahkan progress bar ke slider jika belum ada, lalu init data + slider
-      window.addEventListener("DOMContentLoaded", async () => {
-        await bootstrapData();
+      // Tambahkan progress bar ke slider jika belum ada
+      window.addEventListener("DOMContentLoaded", () => {
         const slider = document.getElementById("slider");
         if (!document.getElementById("sliderProgress")) {
           const bar = document.createElement("div");
@@ -1546,70 +1183,6 @@
           dateSlideIdx = (dateSlideIdx + 1) % dateSlides.length;
           dateSlides[dateSlideIdx].classList.add("active");
         }, 15000); // 15 detik
-      }
-    </script>
-    <script>
-      let deferredInstallPrompt = null;
-
-      function hidePwaPopup() {
-        const popup = document.getElementById("pwa-install-popup");
-        if (popup) popup.classList.remove("active");
-      }
-
-      function showPwaPopup() {
-        const popup = document.getElementById("pwa-install-popup");
-        if (popup) popup.classList.add("active");
-      }
-
-      window.addEventListener("beforeinstallprompt", (event) => {
-        event.preventDefault();
-        deferredInstallPrompt = event;
-
-        const dismissedUntil = Number(
-          localStorage.getItem("pwa_popup_dismissed_until") || "0"
-        );
-        if (Date.now() < dismissedUntil) return;
-
-        showPwaPopup();
-      });
-
-      window.addEventListener("appinstalled", () => {
-        deferredInstallPrompt = null;
-        hidePwaPopup();
-      });
-
-      window.addEventListener("DOMContentLoaded", () => {
-        const installBtn = document.getElementById("pwa-install-btn");
-        const laterBtn = document.getElementById("pwa-later-btn");
-
-        if (installBtn) {
-          installBtn.addEventListener("click", async () => {
-            if (!deferredInstallPrompt) return;
-            deferredInstallPrompt.prompt();
-            await deferredInstallPrompt.userChoice;
-            deferredInstallPrompt = null;
-            hidePwaPopup();
-          });
-        }
-
-        if (laterBtn) {
-          laterBtn.addEventListener("click", () => {
-            // Sembunyikan popup 1 hari jika user klik "Nanti"
-            localStorage.setItem(
-              "pwa_popup_dismissed_until",
-              String(Date.now() + 24 * 60 * 60 * 1000)
-            );
-            hidePwaPopup();
-          });
-        }
-      });
-
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("sw.js").catch((err) => {
-            console.error("Service Worker gagal didaftarkan:", err);
-          });
-        });
       }
     </script>
   </body>
