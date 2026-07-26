@@ -80,6 +80,7 @@
           </div>
           <div class="d-flex gap-2 flex-wrap">
             <a id="previewLink" href="index.html" target="_blank" class="btn btn-outline-success btn-sm">Preview TV</a>
+            <a id="scheduleLink" href="jadwal.html" class="btn btn-outline-warning btn-sm">Jadwal Sholat</a>
             <a id="masterLink" href="user_masjid.html" class="btn btn-outline-primary btn-sm" style="display:none">Master User</a>
             <a href="login.html" class="btn btn-outline-secondary btn-sm">Halaman Awal</a>
             <button type="button" id="logoutBtn" class="btn btn-outline-danger btn-sm">Logout</button>
@@ -102,8 +103,8 @@
               <div class="col-md-6 mb-3">
                 <label class="form-label">Sumber Jadwal Sholat</label>
                 <select name="prayerProvider" class="form-select">
-                  <option value="pemerintah">Pemerintah (MyQuran)</option>
-                  <option value="muhammadiyah">Muhammadiyah (KHGT)</option>
+                  <option value="NU">NU / LFNU (Subuh -20°, Isya -18°)</option>
+                  <option value="KHGT">Muhammadiyah (KHGT)</option>
                 </select>
               </div>
               <div class="col-md-3 mb-3">
@@ -313,6 +314,7 @@
       loginAs: document.getElementById("loginAs"),
       masterLink: document.getElementById("masterLink"),
       logoutBtn: document.getElementById("logoutBtn"),
+      scheduleLink: document.getElementById("scheduleLink"),
       mosqueIdInput: document.getElementById("mosqueIdInput"),
     };
 
@@ -429,8 +431,10 @@
           slidesState = settings.slides
             .filter((s) => s && s.type && s.value)
             .map((s) => ({
+              id: s.id,
               type: ["youtube", "gdrive", "image"].includes(s.type) ? s.type : "image",
               value: String(s.value).trim(),
+              title: s.title || "",
               isLive: !!s.isLive,
               duration: Number(s.duration) || 15,
             }));
@@ -466,7 +470,12 @@
         renderSlidePreview();
       }
       if (delIdx !== null) {
-        slidesState.splice(Number(delIdx), 1);
+        const idx = Number(delIdx);
+        const slide = slidesState[idx];
+        if (slide?.id) {
+          MasjidDB.deleteSlider(slide.id).catch((error) => alert(error.message));
+        }
+        slidesState.splice(idx, 1);
         renderSlidesList();
         resetSlideForm();
       }
@@ -504,6 +513,15 @@
 
       try {
         await MasjidDB.saveSettings(settings.mosqueId || CURRENT_MOSQUE_ID, settings);
+        for (let index = 0; index < slidesState.length; index += 1) {
+          const slide = slidesState[index];
+          await MasjidDB.saveSlider({
+            ...slide,
+            mosqueId: settings.mosqueId || CURRENT_MOSQUE_ID,
+            sortOrder: index,
+            isActive: true,
+          });
+        }
         alert("Data berhasil disimpan.");
       } catch (err) {
         alert("Gagal menyimpan: " + err.message);
@@ -525,6 +543,7 @@
         return;
       }
       const newSlide = {
+        id: editingSlideIndex >= 0 ? slidesState[editingSlideIndex]?.id : undefined,
         type,
         value,
         isLive: type === "youtube" && el.slideIsLive.value === "live",
@@ -550,14 +569,14 @@
       resetRunningTextForm();
     });
 
-    el.logoutBtn.addEventListener("click", () => {
-      MasjidDB.logout();
+    el.logoutBtn.addEventListener("click", async () => {
+      await MasjidDB.logout();
       window.location.href = "login.html";
     });
 
     (async () => {
       await MasjidDB.ready();
-      currentUser = MasjidDB.requireLogin(["user_masjid", "superadmin"]);
+      currentUser = MasjidDB.requireLogin(["admin_masjid", "superadmin"]);
       if (!currentUser) return;
 
       el.loginAs.textContent = currentUser.name || currentUser.username;
@@ -572,13 +591,14 @@
 
       el.topMosqueId.textContent = CURRENT_MOSQUE_ID;
       el.previewLink.href = `index.html?mosque=${encodeURIComponent(CURRENT_MOSQUE_ID)}`;
+      el.scheduleLink.href = `jadwal.html?mosque=${encodeURIComponent(CURRENT_MOSQUE_ID)}`;
 
       resetSlideForm();
       renderSlidesList();
       resetRunningTextForm();
       renderRunningTextList();
 
-      const data = await MasjidDB.getSettings(CURRENT_MOSQUE_ID);
+      const data = await MasjidDB.getSettings(CURRENT_MOSQUE_ID, true);
       if (data.settings) fillForm(data.settings);
     })();
   </script>

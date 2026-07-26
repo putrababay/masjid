@@ -88,6 +88,31 @@
       opacity: 0.8;
     }
 
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 1.25rem;
+    }
+
+    .auth-tab {
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 10px;
+      padding: 0.55rem;
+      background: transparent;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .auth-tab.active {
+      background: #fff;
+      color: var(--green);
+    }
+
+    .auth-form[hidden] {
+      display: none;
+    }
+
     .preview-wrap {
       width: min(100%, 560px);
     }
@@ -166,13 +191,17 @@
   <div class="split">
     <section class="panel panel-left">
       <div class="card-box">
-        <h1>Login Admin</h1>
-        <div class="sub">Masuk untuk mengelola pengaturan TV Masjid.</div>
-        <form id="loginForm">
+        <h1>Administrasi Masjid</h1>
+        <div class="sub">Masuk atau daftarkan pengelola masjid baru.</div>
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab active" data-auth-tab="login">Login</button>
+          <button type="button" class="auth-tab" data-auth-tab="register">Registrasi</button>
+        </div>
+        <form id="loginForm" class="auth-form">
           <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" class="form-control" name="username" required autocomplete="username"
-              placeholder="contoh: annur" />
+            <label class="form-label">Username atau Email</label>
+            <input type="text" class="form-control" name="identity" required autocomplete="username"
+              placeholder="username@email.com" />
           </div>
           <div class="mb-3">
             <label class="form-label">Password</label>
@@ -181,10 +210,45 @@
           </div>
           <button type="submit" class="btn btn-login w-100">Masuk</button>
         </form>
-        <div class="hint">
-          Demo: <b>superadmin / admin123</b> (master) · <b>annur / annur123</b> (user masjid)
-        </div>
-        <div id="loginError" class="text-warning mt-2 small" style="display:none;"></div>
+        <form id="registerForm" class="auth-form" hidden>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Nama Pengelola</label>
+              <input type="text" class="form-control" name="name" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Username</label>
+              <input type="text" class="form-control" name="username" minlength="4" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" name="email" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-control" name="password" minlength="8" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Nama Masjid</label>
+              <input type="text" class="form-control" name="mosqueName" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Alamat Masjid</label>
+              <textarea class="form-control" name="address" rows="2" required></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Latitude</label>
+              <input type="number" step="any" class="form-control" name="latitude" value="-7.4467" required />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Longitude</label>
+              <input type="number" step="any" class="form-control" name="longitude" value="112.7181" required />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-login w-100 mt-3">Daftar</button>
+          <div class="hint">Akun baru menunggu persetujuan superadmin. Pendaftar pertama otomatis menjadi superadmin.</div>
+        </form>
+        <div id="authMessage" class="text-warning mt-2 small" style="display:none;"></div>
       </div>
     </section>
 
@@ -202,7 +266,8 @@
   <script src="js/db.js"></script>
   <script>
     const loginForm = document.getElementById("loginForm");
-    const loginError = document.getElementById("loginError");
+    const registerForm = document.getElementById("registerForm");
+    const authMessage = document.getElementById("authMessage");
     const mosqueList = document.getElementById("mosqueList");
 
     function escapeHtml(str) {
@@ -220,7 +285,7 @@
         const data = await MasjidDB.listMosques();
         const items = data.mosques || [];
         if (!items.length) {
-          mosqueList.innerHTML = '<div class="empty">Belum ada user_masjid aktif.</div>';
+          mosqueList.innerHTML = '<div class="empty">Belum ada masjid aktif.</div>';
           return;
         }
         mosqueList.innerHTML = items
@@ -229,7 +294,7 @@
               <div>
                 <h3>${escapeHtml(m.masjidName || m.mosqueId)}</h3>
                 <p>${escapeHtml(m.masjidAddress || "-")}</p>
-                <p>ID: ${escapeHtml(m.mosqueId)} · User: ${escapeHtml(m.username)}</p>
+                <p>ID: ${escapeHtml(m.mosqueId)}</p>
               </div>
               <a class="btn-preview" href="${escapeHtml(m.previewUrl)}" target="_blank" rel="noopener">Preview TV</a>
             </div>`
@@ -242,18 +307,53 @@
 
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      loginError.style.display = "none";
+      authMessage.style.display = "none";
       const formData = new FormData(loginForm);
       try {
         const result = await MasjidDB.login(
-          formData.get("username"),
+          formData.get("identity"),
           formData.get("password")
         );
         window.location.href = result.redirect || "admin.html";
       } catch (err) {
-        loginError.style.display = "block";
-        loginError.textContent = err.message;
+        authMessage.style.display = "block";
+        authMessage.textContent = err.message;
       }
+    });
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      authMessage.style.display = "none";
+      const values = Object.fromEntries(new FormData(registerForm));
+      values.latitude = Number(values.latitude);
+      values.longitude = Number(values.longitude);
+      try {
+        const result = await MasjidDB.register(values);
+        if (result.user) {
+          window.location.href = result.redirect || "user_masjid.html";
+          return;
+        }
+        authMessage.style.display = "block";
+        authMessage.className = "text-success mt-2 small";
+        authMessage.textContent = result.message;
+        registerForm.reset();
+      } catch (err) {
+        authMessage.style.display = "block";
+        authMessage.className = "text-warning mt-2 small";
+        authMessage.textContent = err.message;
+      }
+    });
+
+    document.querySelectorAll("[data-auth-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.authTab;
+        document.querySelectorAll("[data-auth-tab]").forEach((tab) => {
+          tab.classList.toggle("active", tab === button);
+        });
+        loginForm.hidden = target !== "login";
+        registerForm.hidden = target !== "register";
+        authMessage.style.display = "none";
+      });
     });
 
     (async () => {
@@ -261,7 +361,11 @@
       const user = MasjidDB.getSession();
       if (user) {
         window.location.href =
-          user.role === "superadmin" ? "user_masjid.html" : "admin.html";
+          user.role === "superadmin"
+            ? "user_masjid.html"
+            : user.role === "admin_masjid"
+              ? "admin.html"
+              : `index.html?mosque=${encodeURIComponent(user.mosqueId || "")}`;
         return;
       }
       loadMosques();

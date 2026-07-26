@@ -851,7 +851,7 @@
       let currentJadwal = {};
       let jadwalPemerintah = {};
       let jadwalMuhammadiyah = {};
-      let activePrayerSource = "pemerintah";
+      let activePrayerSource = "nu";
       const textDbDefaults = {
         locationId: "cfa0860e83a4c3a763a7e62d825349f7",
         masjidName: "MASJID AN-NUR SIDOARJO",
@@ -895,7 +895,7 @@
           maghrib: 20,
           isya: 25,
         },
-        prayerProvider: "pemerintah",
+        prayerProvider: "NU",
         khgt: {
           lat: -7.4467,
           lng: 112.7181,
@@ -1088,15 +1088,21 @@
       }
 
       async function getPrayerTimesPemerintah() {
-        const key = getTodayDateYmd();
-        const res = await fetch(
-          `https://api.myquran.com/v3/sholat/jadwal/${LOKASI_ID}/${key}`
-        );
-        const r = await res.json();
-        if (!r.status) {
-          throw new Error("Response pemerintah tidak valid");
-        }
-        return r.data.jadwal[key];
+        const date = getTodayDateYmd();
+        const lat = textDbConfig?.khgt?.lat ?? textDbDefaults.khgt.lat;
+        const lng = textDbConfig?.khgt?.lng ?? textDbDefaults.khgt.lng;
+        const data = await MasjidDB.fetchNu({ lat, lng, date });
+        const timings = data.timings || {};
+        return {
+          imsak: normalizeTimeText(timings.Imsak),
+          subuh: normalizeTimeText(timings.Fajr),
+          terbit: normalizeTimeText(timings.Sunrise),
+          dhuha: normalizeTimeText(timings.Sunrise),
+          dzuhur: normalizeTimeText(timings.Dhuhr),
+          ashar: normalizeTimeText(timings.Asr),
+          maghrib: normalizeTimeText(timings.Maghrib),
+          isya: normalizeTimeText(timings.Isha),
+        };
       }
 
       async function getPrayerTimesMuhammadiyah() {
@@ -1150,14 +1156,48 @@
         const urlParams = new URLSearchParams(window.location.search);
         const queryA = (urlParams.get("a") || "").toLowerCase();
         const providerFromQuery =
-          queryA === "mu" ? "muhammadiyah" : queryA === "nu" ? "pemerintah" : "";
+          queryA === "mu" ? "KHGT" : queryA === "nu" ? "NU" : "";
 
-        const provider = (providerFromQuery ||
+        const rawProvider = (providerFromQuery ||
           textDbConfig.prayerProvider ||
-          "pemerintah")
-          .toString()
-          .toLowerCase();
-        activePrayerSource = provider;
+          "NU").toString().toUpperCase();
+        const provider =
+          rawProvider === "KHGT" || rawProvider === "MUHAMMADIYAH" ? "KHGT" : "NU";
+        activePrayerSource = provider.toLowerCase();
+
+        const mosqueId = getMosqueQueryId() || textDbConfig.mosqueId;
+        const date = getTodayDateYmd();
+        const [nuDb, khgtDb] = await Promise.all([
+          MasjidDB.getTodaySchedule(mosqueId, "NU", date).catch(() => ({ schedule: null })),
+          MasjidDB.getTodaySchedule(mosqueId, "KHGT", date).catch(() => ({ schedule: null })),
+        ]);
+        const fromStored = (row) =>
+          row
+            ? {
+                imsak: row.imsak,
+                subuh: row.subuh,
+                terbit: row.terbit,
+                dhuha: row.dhuha,
+                dzuhur: row.dzuhur,
+                ashar: row.ashar,
+                maghrib: row.maghrib,
+                isya: row.isya,
+              }
+            : {};
+        jadwalPemerintah = fromStored(nuDb.schedule);
+        jadwalMuhammadiyah = fromStored(khgtDb.schedule);
+
+        if (
+          Object.keys(provider === "KHGT" ? jadwalMuhammadiyah : jadwalPemerintah)
+            .length
+        ) {
+          currentJadwal =
+            provider === "KHGT" ? jadwalMuhammadiyah : jadwalPemerintah;
+          renderSholat(currentJadwal);
+          return;
+        }
+
+        // Fallback API langsung jika jadwal D1 untuk hari ini belum diimpor.
         const [govResult, muhResult] = await Promise.allSettled([
           getPrayerTimesPemerintah(),
           getPrayerTimesMuhammadiyah(),
@@ -1168,7 +1208,7 @@
         jadwalMuhammadiyah =
           muhResult.status === "fulfilled" ? muhResult.value : {};
 
-        if (provider === "muhammadiyah") {
+        if (provider === "KHGT") {
           currentJadwal = Object.keys(jadwalMuhammadiyah).length
             ? jadwalMuhammadiyah
             : jadwalPemerintah;

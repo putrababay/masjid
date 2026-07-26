@@ -77,6 +77,10 @@
                   <input type="text" id="userUsername" class="form-control" required placeholder="username" />
                 </div>
                 <div class="col-md-6">
+                  <label class="form-label">Email</label>
+                  <input type="email" id="userEmail" class="form-control" required placeholder="nama@email.com" />
+                </div>
+                <div class="col-md-6">
                   <label class="form-label">Password</label>
                   <input type="text" id="userPassword" class="form-control"
                     placeholder="Wajib untuk user baru / isi untuk ganti" />
@@ -84,20 +88,23 @@
                 <div class="col-md-6">
                   <label class="form-label">Role</label>
                   <select id="userRole" class="form-select">
-                    <option value="user_masjid">user_masjid</option>
+                    <option value="admin_masjid">admin_masjid</option>
+                    <option value="viewer">viewer</option>
                     <option value="superadmin">superadmin</option>
                   </select>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">ID Masjid</label>
                   <input type="text" id="userMosqueId" class="form-control" placeholder="MNR-SDA01" />
-                  <div class="muted-help">Wajib untuk role user_masjid.</div>
+                  <div class="muted-help">Wajib untuk admin_masjid dan viewer.</div>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Status</label>
-                  <select id="userActive" class="form-select">
-                    <option value="1">Aktif</option>
-                    <option value="0">Nonaktif</option>
+                  <label class="form-label">Status / Persetujuan</label>
+                  <select id="userStatus" class="form-select">
+                    <option value="pending">Menunggu</option>
+                    <option value="active">Aktif</option>
+                    <option value="rejected">Ditolak</option>
+                    <option value="disabled">Dinonaktifkan</option>
                   </select>
                 </div>
                 <div class="col-12 d-flex gap-2">
@@ -125,10 +132,11 @@
       userId: document.getElementById("userId"),
       userName: document.getElementById("userName"),
       userUsername: document.getElementById("userUsername"),
+      userEmail: document.getElementById("userEmail"),
       userPassword: document.getElementById("userPassword"),
       userRole: document.getElementById("userRole"),
       userMosqueId: document.getElementById("userMosqueId"),
-      userActive: document.getElementById("userActive"),
+      userStatus: document.getElementById("userStatus"),
       addUserBtn: document.getElementById("addUserBtn"),
       resetUserBtn: document.getElementById("resetUserBtn"),
       userList: document.getElementById("userList"),
@@ -150,15 +158,16 @@
       el.userId.value = "";
       el.userName.value = "";
       el.userUsername.value = "";
+      el.userEmail.value = "";
       el.userPassword.value = "";
-      el.userRole.value = "user_masjid";
+      el.userRole.value = "admin_masjid";
       el.userMosqueId.value = "";
-      el.userActive.value = "1";
+      el.userStatus.value = "pending";
       toggleMosqueField();
     }
 
     function toggleMosqueField() {
-      const needMosque = el.userRole.value === "user_masjid";
+      const needMosque = el.userRole.value !== "superadmin";
       el.userMosqueId.disabled = !needMosque;
       if (!needMosque) el.userMosqueId.value = "";
     }
@@ -171,10 +180,10 @@
 
       el.userList.innerHTML = usersState
         .map((u) => {
-          const status = u.isActive ? "Aktif" : "Nonaktif";
+          const status = u.status || "pending";
           const mosque = u.mosqueId || "-";
           const preview =
-            u.role === "user_masjid" && u.mosqueId
+            u.role !== "superadmin" && u.mosqueId
               ? `<a class="btn btn-outline-success btn-sm" target="_blank" href="index.html?mosque=${encodeURIComponent(u.mosqueId)}">Preview</a>`
               : "";
           return `<div class="crud-list-item">
@@ -199,10 +208,11 @@
       el.userId.value = u.id;
       el.userName.value = u.name || "";
       el.userUsername.value = u.username || "";
+      el.userEmail.value = u.email || "";
       el.userPassword.value = "";
-      el.userRole.value = u.role || "user_masjid";
+      el.userRole.value = u.role || "admin_masjid";
       el.userMosqueId.value = u.mosqueId || "";
-      el.userActive.value = u.isActive ? "1" : "0";
+      el.userStatus.value = u.status || "pending";
       toggleMosqueField();
     }
 
@@ -231,10 +241,11 @@
           id: editingUserId || undefined,
           name: el.userName.value.trim(),
           username: el.userUsername.value.trim(),
+          email: el.userEmail.value.trim(),
           password: el.userPassword.value,
           role: el.userRole.value,
           mosqueId: el.userMosqueId.value.trim(),
-          isActive: el.userActive.value === "1",
+          status: el.userStatus.value,
         });
         usersState = result.users || [];
         renderUserList();
@@ -255,8 +266,8 @@
     el.userRole.addEventListener("change", toggleMosqueField);
     el.addUserBtn.addEventListener("click", resetUserForm);
     el.resetUserBtn.addEventListener("click", resetUserForm);
-    el.logoutBtn.addEventListener("click", () => {
-      MasjidDB.logout();
+    el.logoutBtn.addEventListener("click", async () => {
+      await MasjidDB.logout();
       window.location.href = "login.html";
     });
 

@@ -1,122 +1,54 @@
 {
-  "users": [
+  "_info": "Seed publik tanpa akun atau password. Akun dibuat melalui registrasi dan disimpan di D1.",
+  "mosques": [
     {
-      "id": "usr_super",
-      "username": "superadmin",
-      "password": "admin123",
-      "name": "Super Admin",
-      "role": "superadmin",
-      "mosqueId": null,
-      "isActive": true
-    },
-    {
-      "id": "usr_annur",
-      "username": "annur",
-      "password": "annur123",
-      "name": "Takmir An-Nur",
-      "role": "user_masjid",
-      "mosqueId": "MNR-SDA01",
-      "isActive": true
+      "id": "MNR-SDA01",
+      "name": "MASJID AN-NUR SIDOARJO UMSIDA",
+      "address": "Jl. Mojopahit No.666, Celep, Kabupaten Sidoarjo Jawa Timur",
+      "locationId": "cfa0860e83a4c3a763a7e62d825349f7",
+      "latitude": -7.4467,
+      "longitude": 112.7181,
+      "capacity": "800 Jamaah",
+      "chairman": "H. Ahmad Fulan",
+      "secretary": "Budi Santoso, ST",
+      "treasurer": "H. M. Mansur",
+      "prayerProvider": "NU",
+      "qrisTitle": "Infaq & Sedekah",
+      "qrisImageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=DonasiMasjidAnNurSidoarjo",
+      "qrisCaption": "Scan QRIS a.n Masjid An-Nur",
+      "gdriveFolderUrl": "https://drive.google.com/drive/folders/1oX7T4ZEZpJXi6FSOXKw8fkLB99PjMhgC?usp=sharing",
+      "iqomahDurations": {
+        "subuh": 25,
+        "dzuhur": 25,
+        "ashar": 5,
+        "maghrib": 20,
+        "isya": 25
+      },
+      "runningTexts": [
+        "<b>Laporan Keuangan:</b> Saldo Kas Rp 18.350.000",
+        "<b>Agenda:</b> Kajian Ahad Pagi",
+        "Mohon menonaktifkan suara handphone saat memasuki area shalat"
+      ]
     }
   ],
-  "mosques": {
-    "MNR-SDA01": {
-      "settings": {
-        "locationId": "cfa0860e83a4c3a763a7e62d825349f7",
-        "masjidName": "MASJID AN-NUR SIDOARJO UMSIDA",
-        "masjidAddress": "Jl. Mojopahit No.666, Celep, Kabupaten Sidoarjo Jawa Timur",
-        "qrisTitle": "Infaq & Sedekah",
-        "qrisImageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=DonasiMasjidAnNurSidoarjo",
-        "qrisCaption": "Scan QRIS a.n Masjid An-Nur",
-        "mosqueId": "MNR-SDA01",
-        "capacity": "800 Jamaah",
-        "chairman": "H. Ahmad Fulan",
-        "secretary": "Budi Santoso, ST",
-        "treasurer": "H. M. Mansur",
-        "balanceStart": "Rp 15.000.000",
-        "income": "Rp 5.500.000",
-        "expense": "Rp 2.150.000",
-        "balanceEnd": "Rp 18.350.000",
-        "balanceUpdatedAt": "10 Maret 2026",
-        "runningTexts": [
-          "<b>Laporan Keuangan:</b> Saldo Kas Rp 18.350.000 (Per 20 Feb)",
-          "<b>Agenda:</b> Kajian Ahad Pagi bersama Ust. Dr. Malik Aris di Ruang Utama",
-          "Mohon menonaktifkan suara handphone saat memasuki area Shalat",
-          "Jagalah kebersihan Masjid adalah sebagian dari Iman"
-        ],
-        "regularVideoId": "F8121v_ER9M",
-        "liveVideoId": "_XgE09RZsB8",
-        "slides": [
-          { "type": "youtube", "value": "F8121v_ER9M", "isLive": false },
-          { "type": "youtube", "value": "_XgE09RZsB8", "isLive": true },
-          { "type": "image", "value": "1.jpg" },
-          { "type": "image", "value": "11.jpg" },
-          { "type": "image", "value": "2.jpg" },
-          { "type": "image", "value": "3.jpg" },
-          { "type": "image", "value": "4.jpg" }
-        ],
-        "iqomahDurations": {
-          "subuh": 25,
-          "dzuhur": 25,
-          "ashar": 5,
-          "maghrib": 20,
-          "isya": 25
-        },
-        "prayerProvider": "pemerintah",
-        "khgt": {
-          "lat": -7.4467,
-          "lng": 112.7181
-        },
-        "gdriveFolderUrl": "https://drive.google.com/drive/folders/1oX7T4ZEZpJXi6FSOXKw8fkLB99PjMhgC?usp=sharing"
-      }
+  "sliders": [
+    {
+      "mosqueId": "MNR-SDA01",
+      "type": "youtube",
+      "value": "F8121v_ER9M",
+      "duration": 30,
+      "isLive": false,
+      "sortOrder": 0,
+      "isActive": true
+    },
+    {
+      "mosqueId": "MNR-SDA01",
+      "type": "youtube",
+      "value": "_XgE09RZsB8",
+      "duration": 180,
+      "isLive": true,
+      "sortOrder": 1,
+      "isActive": true
     }
-  },
-  "settings": {
-    "locationId": "cfa0860e83a4c3a763a7e62d825349f7",
-    "masjidName": "MASJID AN-NUR SIDOARJO UMSIDA",
-    "masjidAddress": "Jl. Mojopahit No.666, Celep, Kabupaten Sidoarjo Jawa Timur",
-    "qrisTitle": "Infaq & Sedekah",
-    "qrisImageUrl": "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=DonasiMasjidAnNurSidoarjo",
-    "qrisCaption": "Scan QRIS a.n Masjid An-Nur",
-    "mosqueId": "MNR-SDA01",
-    "capacity": "800 Jamaah",
-    "chairman": "H. Ahmad Fulan",
-    "secretary": "Budi Santoso, ST",
-    "treasurer": "H. M. Mansur",
-    "balanceStart": "Rp 15.000.000",
-    "income": "Rp 5.500.000",
-    "expense": "Rp 2.150.000",
-    "balanceEnd": "Rp 18.350.000",
-    "balanceUpdatedAt": "10 Maret 2026",
-    "runningTexts": [
-      "<b>Laporan Keuangan:</b> Saldo Kas Rp 18.350.000 (Per 20 Feb)",
-      "<b>Agenda:</b> Kajian Ahad Pagi bersama Ust. Dr. Malik Aris di Ruang Utama",
-      "Mohon menonaktifkan suara handphone saat memasuki area Shalat",
-      "Jagalah kebersihan Masjid adalah sebagian dari Iman"
-    ],
-    "regularVideoId": "F8121v_ER9M",
-    "liveVideoId": "_XgE09RZsB8",
-    "slides": [
-      { "type": "youtube", "value": "F8121v_ER9M", "isLive": false },
-      { "type": "youtube", "value": "_XgE09RZsB8", "isLive": true },
-      { "type": "image", "value": "1.jpg" },
-      { "type": "image", "value": "11.jpg" },
-      { "type": "image", "value": "2.jpg" },
-      { "type": "image", "value": "3.jpg" },
-      { "type": "image", "value": "4.jpg" }
-    ],
-    "iqomahDurations": {
-      "subuh": 25,
-      "dzuhur": 25,
-      "ashar": 5,
-      "maghrib": 20,
-      "isya": 25
-    },
-    "prayerProvider": "pemerintah",
-    "khgt": {
-      "lat": -7.4467,
-      "lng": 112.7181
-    },
-    "gdriveFolderUrl": "https://drive.google.com/drive/folders/1oX7T4ZEZpJXi6FSOXKw8fkLB99PjMhgC?usp=sharing"
-  }
+  ]
 }
