@@ -75,9 +75,10 @@ CREATE TABLE IF NOT EXISTS sliders (
   FOREIGN KEY (mosque_id) REFERENCES mosques(id) ON DELETE CASCADE
 );
 
+-- Jadwal sholat GLOBAL (bukan per masjid).
+-- Masjid hanya memilih provider NU / KHGT di pengaturan.
 CREATE TABLE IF NOT EXISTS prayer_schedules (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  mosque_id TEXT NOT NULL,
   provider TEXT NOT NULL CHECK (provider IN ('NU', 'KHGT')),
   prayer_date TEXT NOT NULL,
   imsak TEXT,
@@ -90,8 +91,7 @@ CREATE TABLE IF NOT EXISTS prayer_schedules (
   isya TEXT NOT NULL,
   source TEXT NOT NULL DEFAULT '',
   fetched_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (mosque_id, provider, prayer_date),
-  FOREIGN KEY (mosque_id) REFERENCES mosques(id) ON DELETE CASCADE
+  UNIQUE (provider, prayer_date)
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_mosque ON users(mosque_id);
@@ -99,5 +99,5 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_sliders_mosque_order
   ON sliders(mosque_id, is_active, sort_order);
-CREATE INDEX IF NOT EXISTS idx_prayer_mosque_provider_date
-  ON prayer_schedules(mosque_id, provider, prayer_date);
+CREATE INDEX IF NOT EXISTS idx_prayer_provider_date
+  ON prayer_schedules(provider, prayer_date);

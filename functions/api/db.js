@@ -478,27 +478,28 @@ async function deleteSlider(db, payload, actor) {
   return response({ ok: true });
 }
 
-async function fetchNuMonth(latitude, longitude, year, month) {
-  const url = new URL(`https://api.aladhan.com/v1/calendar/${year}/${month}`);
-  url.searchParams.set("latitude", latitude);
-  url.searchParams.set("longitude", longitude);
-  url.searchParams.set("method", "99");
-  url.searchParams.set("methodSettings", "20,null,18");
-  url.searchParams.set("school", "0");
+async function fetchMyQuranMonth(locationId, year, month) {
+  const id = text(locationId, 100);
+  if (!id) throw new ApiError(400, "locationId MyQuran wajib untuk impor NU");
+  const ym = `${year}-${String(month).padStart(2, "0")}`;
+  const url = `https://api.myquran.com/v3/sholat/jadwal/${encodeURIComponent(id)}/${ym}`;
   const result = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!result.ok) throw new ApiError(502, "Sumber jadwal NU gagal");
+  if (!result.ok) throw new ApiError(502, `MyQuran gagal (${result.status}) untuk ${ym}`);
   const json = await result.json();
-  if (!Array.isArray(json.data)) throw new ApiError(502, "Data NU tidak valid");
-  return json.data.map((day) => ({
-    date: day.date.gregorian.date.split("-").reverse().join("-"),
-    imsak: cleanTime(day.timings.Imsak),
-    subuh: cleanTime(day.timings.Fajr),
-    terbit: cleanTime(day.timings.Sunrise),
-    dhuha: cleanTime(day.timings.Sunrise),
-    dzuhur: cleanTime(day.timings.Dhuhr),
-    ashar: cleanTime(day.timings.Asr),
-    maghrib: cleanTime(day.timings.Maghrib),
-    isya: cleanTime(day.timings.Isha),
+  const jadwal = json?.data?.jadwal;
+  if (!jadwal || typeof jadwal !== "object") {
+    throw new ApiError(502, "Data jadwal MyQuran tidak valid");
+  }
+  return Object.entries(jadwal).map(([date, day]) => ({
+    date,
+    imsak: cleanTime(day.imsak),
+    subuh: cleanTime(day.subuh),
+    terbit: cleanTime(day.terbit),
+    dhuha: cleanTime(day.dhuha),
+    dzuhur: cleanTime(day.dzuhur),
+    ashar: cleanTime(day.ashar),
+    maghrib: cleanTime(day.maghrib),
+    isya: cleanTime(day.isya),
   }));
 }
 
@@ -554,46 +555,44 @@ async function fetchKhgtMonth(latitude, longitude, year, month) {
 }
 
 async function importPrayerMonth(db, payload, actor) {
-  const mosqueId = text(payload.mosqueId, 50);
-  if (!canManageMosque(actor, mosqueId)) {
-    throw new ApiError(403, "Tidak berhak mengimpor jadwal masjid ini");
-  }
+  requireUser(actor, ["superadmin", "admin_masjid"]);
   const provider = normalizeProvider(payload.provider);
   const year = Number(payload.year);
   const month = Number(payload.month);
   if (year < 2020 || year > 2100 || month < 1 || month > 12) {
     throw new ApiError(400, "Tahun/bulan tidak valid");
   }
-  const mosque = await db
-    .prepare("SELECT latitude, longitude FROM mosques WHERE id=?")
-    .bind(mosqueId)
-    .first();
-  if (!mosque) throw new ApiError(404, "Masjid tidak ditemukan");
+
+  const defaultLocation = "cfa0860e83a4c3a763a7e62d825349f7";
+  const locationId = text(payload.locationId, 100) || defaultLocation;
+  const latitude = Number(payload.latitude);
+  const longitude = Number(payload.longitude);
+  const lat = Number.isFinite(latitude) ? latitude : -7.4467;
+  const lng = Number.isFinite(longitude) ? longitude : 112.7181;
 
   const items =
     provider === "KHGT"
-      ? await fetchKhgtMonth(mosque.latitude, mosque.longitude, year, month)
-      : await fetchNuMonth(mosque.latitude, mosque.longitude, year, month);
+      ? await fetchKhgtMonth(lat, lng, year, month)
+      : await fetchMyQuranMonth(locationId, year, month);
   const source =
     provider === "KHGT"
       ? "khgt.muhammadiyah.or.id"
-      : "AlAdhan custom LFNU (-20/-18)";
+      : `api.myquran.com/v3 (${locationId})`;
 
   const statements = items.map((item) =>
     db
       .prepare(
         `INSERT INTO prayer_schedules
-          (mosque_id, provider, prayer_date, imsak, subuh, terbit, dhuha,
+          (provider, prayer_date, imsak, subuh, terbit, dhuha,
            dzuhur, ashar, maghrib, isya, source, fetched_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(mosque_id, provider, prayer_date) DO UPDATE SET
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(provider, prayer_date) DO UPDATE SET
           imsak=excluded.imsak, subuh=excluded.subuh, terbit=excluded.terbit,
           dhuha=excluded.dhuha, dzuhur=excluded.dzuhur, ashar=excluded.ashar,
           maghrib=excluded.maghrib, isya=excluded.isya, source=excluded.source,
           fetched_at=CURRENT_TIMESTAMP`
       )
       .bind(
-        mosqueId,
         provider,
         item.date,
         item.imsak,
@@ -608,7 +607,16 @@ async function importPrayerMonth(db, payload, actor) {
       )
   );
   await db.batch(statements);
-  return response({ ok: true, imported: items.length, provider, year, month });
+  return response({
+    ok: true,
+    imported: items.length,
+    provider,
+    year,
+    month,
+    locationId: provider === "NU" ? locationId : undefined,
+    latitude: provider === "KHGT" ? lat : undefined,
+    longitude: provider === "KHGT" ? lng : undefined,
+  });
 }
 
 async function handleGet(db, url, actor) {
@@ -645,11 +653,23 @@ async function handleGet(db, url, actor) {
     const row = await db
       .prepare(
         `SELECT * FROM prayer_schedules
-          WHERE mosque_id=? AND provider=? AND prayer_date=?`
+          WHERE provider=? AND prayer_date=?`
       )
-      .bind(mosqueId, provider, date)
+      .bind(provider, date)
       .first();
-    return response({ ok: true, schedule: row || null });
+    return response({ ok: true, schedule: row || null, provider, date });
+  }
+  if (action === "calendar_today") {
+    try {
+      const result = await fetch("https://api.myquran.com/v3/cal/today", {
+        headers: { Accept: "application/json" },
+      });
+      if (!result.ok) throw new Error(`MyQuran cal status ${result.status}`);
+      const json = await result.json();
+      return response({ ok: true, calendar: json.data || null, raw: json });
+    } catch (error) {
+      throw new ApiError(502, error.message || "Gagal mengambil kalender MyQuran");
+    }
   }
 
   requireUser(actor);
@@ -696,22 +716,18 @@ async function handleGet(db, url, actor) {
     return response({ ok: true, sliders: await getSliders(db, target, true) });
   }
   if (action === "prayers") {
-    const target = mosqueId || actor.mosqueId;
-    if (actor.role !== "superadmin" && actor.mosqueId !== target) {
-      throw new ApiError(403, "Akses ditolak");
-    }
     const provider = normalizeProvider(url.searchParams.get("provider"));
     const from = text(url.searchParams.get("from"), 10) || "0000-01-01";
     const to = text(url.searchParams.get("to"), 10) || "9999-12-31";
     const result = await db
       .prepare(
         `SELECT * FROM prayer_schedules
-          WHERE mosque_id=? AND provider=? AND prayer_date BETWEEN ? AND ?
+          WHERE provider=? AND prayer_date BETWEEN ? AND ?
           ORDER BY prayer_date LIMIT 400`
       )
-      .bind(target, provider, from, to)
+      .bind(provider, from, to)
       .all();
-    return response({ ok: true, schedules: result.results || [] });
+    return response({ ok: true, schedules: result.results || [], provider });
   }
   if (action === "dashboard_stats") {
     const target = mosqueId || actor.mosqueId;
@@ -762,16 +778,16 @@ async function handleGet(db, url, actor) {
     const nuDays = await db
       .prepare(
         `SELECT COUNT(*) AS total FROM prayer_schedules
-          WHERE mosque_id=? AND provider='NU' AND prayer_date BETWEEN ? AND ?`
+          WHERE provider='NU' AND prayer_date BETWEEN ? AND ?`
       )
-      .bind(target, from, to)
+      .bind(from, to)
       .first();
     const khgtDays = await db
       .prepare(
         `SELECT COUNT(*) AS total FROM prayer_schedules
-          WHERE mosque_id=? AND provider='KHGT' AND prayer_date BETWEEN ? AND ?`
+          WHERE provider='KHGT' AND prayer_date BETWEEN ? AND ?`
       )
-      .bind(target, from, to)
+      .bind(from, to)
       .first();
 
     const calendarRows = await db
@@ -779,10 +795,10 @@ async function handleGet(db, url, actor) {
         `SELECT provider, prayer_date AS prayerDate, imsak, subuh, terbit, dhuha,
                 dzuhur, ashar, maghrib, isya, source
            FROM prayer_schedules
-          WHERE mosque_id=? AND prayer_date BETWEEN ? AND ?
+          WHERE prayer_date BETWEEN ? AND ?
           ORDER BY prayer_date, provider`
       )
-      .bind(target, from, to)
+      .bind(from, to)
       .all();
 
     const byDate = {};
@@ -837,9 +853,8 @@ async function handlePost(db, request, payload, actor) {
     return importPrayerMonth(db, payload, actor);
   }
   if (action === "save_prayer") {
+    requireUser(actor, ["superadmin", "admin_masjid"]);
     const item = payload.schedule || {};
-    const mosqueId = text(item.mosqueId, 50);
-    if (!canManageMosque(actor, mosqueId)) throw new ApiError(403, "Akses ditolak");
     const provider = normalizeProvider(item.provider);
     if (item.id) {
       await db
@@ -847,7 +862,7 @@ async function handlePost(db, request, payload, actor) {
           `UPDATE prayer_schedules SET provider=?, prayer_date=?, imsak=?,
              subuh=?, terbit=?, dhuha=?, dzuhur=?, ashar=?, maghrib=?, isya=?,
              source='manual', fetched_at=CURRENT_TIMESTAMP
-           WHERE id=? AND mosque_id=?`
+           WHERE id=?`
         )
         .bind(
           provider,
@@ -860,8 +875,7 @@ async function handlePost(db, request, payload, actor) {
           cleanTime(item.ashar),
           cleanTime(item.maghrib),
           cleanTime(item.isya),
-          Number(item.id),
-          mosqueId
+          Number(item.id)
         )
         .run();
       return response({ ok: true });
@@ -869,17 +883,16 @@ async function handlePost(db, request, payload, actor) {
     await db
       .prepare(
         `INSERT INTO prayer_schedules
-          (mosque_id, provider, prayer_date, imsak, subuh, terbit, dhuha,
+          (provider, prayer_date, imsak, subuh, terbit, dhuha,
            dzuhur, ashar, maghrib, isya, source)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual')
-         ON CONFLICT(mosque_id, provider, prayer_date) DO UPDATE SET
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'manual')
+         ON CONFLICT(provider, prayer_date) DO UPDATE SET
           imsak=excluded.imsak, subuh=excluded.subuh, terbit=excluded.terbit,
           dhuha=excluded.dhuha, dzuhur=excluded.dzuhur, ashar=excluded.ashar,
           maghrib=excluded.maghrib, isya=excluded.isya, source='manual',
           fetched_at=CURRENT_TIMESTAMP`
       )
       .bind(
-        mosqueId,
         provider,
         text(item.prayerDate, 10),
         cleanTime(item.imsak),
@@ -895,11 +908,10 @@ async function handlePost(db, request, payload, actor) {
     return response({ ok: true });
   }
   if (action === "delete_prayer") {
-    const mosqueId = text(payload.mosqueId, 50);
-    if (!canManageMosque(actor, mosqueId)) throw new ApiError(403, "Akses ditolak");
+    requireUser(actor, ["superadmin", "admin_masjid"]);
     await db
-      .prepare("DELETE FROM prayer_schedules WHERE id=? AND mosque_id=?")
-      .bind(Number(payload.id), mosqueId)
+      .prepare("DELETE FROM prayer_schedules WHERE id=?")
+      .bind(Number(payload.id))
       .run();
     return response({ ok: true });
   }

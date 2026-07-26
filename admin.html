@@ -229,6 +229,7 @@
 
   <script src="js/db.js"></script>
   <script src="js/admin-shell.js"></script>
+  <script src="js/mosque-table.js"></script>
   <script>
     let CURRENT_MOSQUE_ID = "MNR-SDA01";
     let currentUser = null;
@@ -312,6 +313,19 @@
       });
       if (!currentUser) return;
 
+      const mosqueParam = new URLSearchParams(location.search).get("mosque");
+      if (currentUser.role === "superadmin" && !mosqueParam) {
+        document.getElementById("adminContent").innerHTML =
+          '<div id="mosqueListWrap"></div>';
+        document.getElementById("adminTopMeta").textContent =
+          "Pilih masjid untuk mengatur setting";
+        await MosqueTable.render("#mosqueListWrap", {
+          editUrl: "admin.html",
+          pageLabel: "Setting",
+        });
+        return;
+      }
+
       form = document.getElementById("adminForm");
       el = {
         runningTextInput: document.getElementById("runningTextInput"),
@@ -331,8 +345,12 @@
 
       el.loginAs.textContent = currentUser.name || currentUser.username;
       if (currentUser.role === "superadmin") {
-        const q = new URLSearchParams(location.search).get("mosque");
-        CURRENT_MOSQUE_ID = q || currentUser.mosqueId || "MNR-SDA01";
+        CURRENT_MOSQUE_ID = mosqueParam || currentUser.mosqueId || "MNR-SDA01";
+        const back = document.createElement("a");
+        back.href = "admin.html";
+        back.className = "btn btn-outline-secondary btn-sm me-2";
+        back.textContent = "← Daftar Masjid";
+        document.getElementById("adminTopActions")?.prepend(back);
       } else {
         CURRENT_MOSQUE_ID = currentUser.mosqueId || "MNR-SDA01";
         el.mosqueIdInput.readOnly = true;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CRUD Jadwal Sholat</title>
+  <title>Jadwal Sholat Global</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="css/admin.css" rel="stylesheet" />
   <style>
@@ -16,16 +16,24 @@
 </head>
 <body>
   <div id="adminPageRoot">
-    <section class="card p-3 mb-3">
+    <div id="mosqueListWrap" class="mb-3" hidden></div>
+
+    <div id="calendarTodayBox" class="panel-card mb-3">
+      <h2 class="mb-1">Kalender Hari Ini (MyQuran)</h2>
+      <div id="calendarTodayText" class="text-secondary">Memuat...</div>
+    </div>
+
+    <section class="card p-3 mb-3" id="importSection">
+      <h5 class="mb-2">Impor Jadwal Global</h5>
+      <p class="small text-secondary mb-3">
+        Impor sekali untuk semua masjid. Masing-masing masjid hanya memilih NU / KHGT di Setting.
+        Sumber NU: <a href="https://api.myquran.com/v3/cal/today" target="_blank" rel="noopener">MyQuran</a>.
+      </p>
       <div class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Masjid</label>
-          <select id="mosqueSelect" class="form-select"></select>
-        </div>
         <div class="col-md-2">
           <label class="form-label">Provider</label>
           <select id="provider" class="form-select">
-            <option value="NU">NU / LFNU</option>
+            <option value="NU">NU (MyQuran)</option>
             <option value="KHGT">KHGT Muhammadiyah</option>
           </select>
         </div>
@@ -36,6 +44,18 @@
         <div class="col-md-2">
           <label class="form-label">Sampai</label>
           <input id="toDate" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3" id="locationWrap">
+          <label class="form-label">ID Kota MyQuran (NU)</label>
+          <input id="locationId" type="text" class="form-control" value="cfa0860e83a4c3a763a7e62d825349f7" />
+        </div>
+        <div class="col-md-2" id="latWrap" hidden>
+          <label class="form-label">Lat (KHGT)</label>
+          <input id="khgtLat" type="number" step="any" class="form-control" value="-7.4467" />
+        </div>
+        <div class="col-md-2" id="lngWrap" hidden>
+          <label class="form-label">Lng (KHGT)</label>
+          <input id="khgtLng" type="number" step="any" class="form-control" value="112.7181" />
         </div>
         <div class="col-md-3 d-flex gap-2">
           <button id="loadBtn" class="btn btn-primary flex-fill">Tampilkan</button>
@@ -51,7 +71,7 @@
     </section>
 
     <section class="card p-3 mb-3">
-      <h5 id="formTitle">Tambah Jadwal Manual</h5>
+      <h5 id="formTitle">Tambah Jadwal Manual (Global)</h5>
       <form id="scheduleForm">
         <input id="scheduleId" type="hidden" />
         <div class="row g-2">
@@ -74,7 +94,7 @@
 
     <section class="card p-3">
       <div class="d-flex justify-content-between">
-        <h5>Daftar Jadwal</h5>
+        <h5>Daftar Jadwal Global</h5>
         <span id="totalRows" class="badge text-bg-success align-self-center">0 data</span>
       </div>
       <div class="table-wrap">
@@ -93,6 +113,7 @@
 
   <script src="js/db.js"></script>
   <script src="js/admin-shell.js"></script>
+  <script src="js/mosque-table.js"></script>
   <script>
     let el = {};
     let currentUser;
@@ -117,6 +138,13 @@
       }[char]));
     }
 
+    function syncProviderFields() {
+      const isKhgt = el.provider.value === "KHGT";
+      document.getElementById("locationWrap").hidden = isKhgt;
+      document.getElementById("latWrap").hidden = !isKhgt;
+      document.getElementById("lngWrap").hidden = !isKhgt;
+    }
+
     function render() {
       el.totalRows.textContent = `${schedules.length} data`;
       el.scheduleRows.innerHTML = schedules.length
@@ -137,7 +165,7 @@
 
     async function loadSchedules() {
       const result = await MasjidDB.listPrayers(
-        el.mosqueSelect.value, el.provider.value, el.fromDate.value, el.toDate.value
+        el.provider.value, el.fromDate.value, el.toDate.value
       );
       schedules = result.schedules || [];
       render();
@@ -154,6 +182,8 @@
       if (!item) return;
       el.scheduleId.value = item.id;
       el.prayerDate.value = item.prayer_date;
+      el.provider.value = item.provider;
+      syncProviderFields();
       ["imsak", "subuh", "terbit", "dhuha", "dzuhur", "ashar", "maghrib", "isya"]
         .forEach((key) => { el[key].value = item[key] || ""; });
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -171,21 +201,24 @@
       }
       el.importBox.hidden = false;
       el.importBtn.disabled = true;
+      const options = {
+        locationId: el.locationId.value.trim(),
+        latitude: Number(el.khgtLat.value),
+        longitude: Number(el.khgtLng.value),
+      };
       try {
         for (let index = 0; index < jobs.length; index += 1) {
           const job = jobs[index];
           el.importStatus.textContent = `Mengambil ${job.provider} ${job.month}/${job.year}...`;
-          await MasjidDB.importPrayerMonth(
-            el.mosqueSelect.value, job.provider, job.year, job.month
-          );
+          await MasjidDB.importPrayerMonth(job.provider, job.year, job.month, options);
           const percent = Math.round(((index + 1) / jobs.length) * 100);
           el.importProgress.style.width = `${percent}%`;
           el.importProgress.textContent = `${percent}%`;
         }
-        el.importStatus.textContent = "Impor NU dan KHGT satu tahun selesai.";
+        el.importStatus.textContent = "Impor NU (MyQuran) dan KHGT satu tahun selesai.";
         await loadSchedules();
       } catch (error) {
-        el.importStatus.textContent = `Impor terhenti: ${error.message}. Klik lagi untuk melanjutkan; data yang sudah masuk tidak hilang.`;
+        el.importStatus.textContent = `Impor terhenti: ${error.message}. Klik lagi untuk melanjutkan.`;
       } finally {
         el.importBtn.disabled = false;
       }
@@ -194,33 +227,45 @@
     (async () => {
       currentUser = await AdminShell.mount({
         page: "jadwal",
-        title: "Jadwal Sholat NU & KHGT",
+        title: "Jadwal Sholat Global",
       });
       if (!currentUser) return;
 
       el = Object.fromEntries(
-        ["mosqueSelect", "provider", "fromDate", "toDate", "loadBtn", "importBtn",
-         "importBox", "importProgress", "importStatus", "scheduleForm", "scheduleId",
+        ["provider", "fromDate", "toDate", "loadBtn", "importBtn", "importBox",
+         "importProgress", "importStatus", "scheduleForm", "scheduleId",
          "prayerDate", "imsak", "subuh", "terbit", "dhuha", "dzuhur", "ashar",
-         "maghrib", "isya", "resetBtn", "scheduleRows", "totalRows"].map((id) => [id, document.getElementById(id)])
+         "maghrib", "isya", "resetBtn", "scheduleRows", "totalRows",
+         "locationId", "khgtLat", "khgtLng"].map((id) => [id, document.getElementById(id)])
       );
 
-      setDefaultDates();
-      const result = await MasjidDB.listAdminMosques();
-      const requested = new URLSearchParams(location.search).get("mosque");
-      el.mosqueSelect.innerHTML = (result.mosques || [])
-        .map((mosque) => `<option value="${escapeHtml(mosque.id)}">${escapeHtml(mosque.name)}</option>`)
-        .join("");
-      if (requested && [...el.mosqueSelect.options].some((o) => o.value === requested)) {
-        el.mosqueSelect.value = requested;
+      if (currentUser.role === "superadmin") {
+        const wrap = document.getElementById("mosqueListWrap");
+        wrap.hidden = false;
+        await MosqueTable.render(wrap, {
+          editUrl: "admin.html",
+          pageLabel: "Setting Provider",
+        });
       }
-      document.getElementById("adminTopMeta").textContent = `Masjid: ${el.mosqueSelect.value}`;
+
+      try {
+        const cal = await MasjidDB.calendarToday();
+        const c = cal.calendar;
+        document.getElementById("calendarTodayText").innerHTML = c
+          ? `<strong>${escapeHtml(c.ce?.today || "")}</strong> · ${escapeHtml(c.hijr?.today || "")}`
+          : "Kalender tidak tersedia";
+      } catch {
+        document.getElementById("calendarTodayText").textContent = "Gagal memuat kalender MyQuran";
+      }
+
+      setDefaultDates();
+      syncProviderFields();
+      document.getElementById("adminTopMeta").textContent = "Jadwal global · semua masjid";
 
       el.scheduleForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const schedule = {
           id: el.scheduleId.value || undefined,
-          mosqueId: el.mosqueSelect.value,
           provider: el.provider.value,
           prayerDate: el.prayerDate.value,
         };
@@ -239,17 +284,16 @@
         const editId = event.target.dataset.edit;
         const deleteId = event.target.dataset.delete;
         if (editId) editSchedule(editId);
-        if (deleteId && confirm("Hapus jadwal ini?")) {
-          await MasjidDB.deletePrayer(deleteId, el.mosqueSelect.value);
+        if (deleteId && confirm("Hapus jadwal global ini?")) {
+          await MasjidDB.deletePrayer(deleteId);
           await loadSchedules();
         }
       });
       el.loadBtn.addEventListener("click", () => loadSchedules().catch((e) => alert(e.message)));
       el.importBtn.addEventListener("click", importYear);
       el.resetBtn.addEventListener("click", resetForm);
-      el.provider.addEventListener("change", () => loadSchedules().catch((e) => alert(e.message)));
-      el.mosqueSelect.addEventListener("change", () => {
-        document.getElementById("adminTopMeta").textContent = `Masjid: ${el.mosqueSelect.value}`;
+      el.provider.addEventListener("change", () => {
+        syncProviderFields();
         loadSchedules().catch((e) => alert(e.message));
       });
 

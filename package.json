@@ -7,6 +7,8 @@
     "dev": "wrangler pages dev . --local --persist-to .wrangler/state --port 8788",
     "db:schema:local": "wrangler d1 execute masjid-db --local --file=./schema-d1.sql",
     "db:seed:local": "wrangler d1 execute masjid-db --local --file=./seed-d1.sql",
+    "db:migrate:prayer:local": "wrangler d1 execute masjid-db --local --file=./migrate-prayer-global.sql",
+    "db:migrate:prayer:remote": "wrangler d1 execute masjid-db --remote --file=./migrate-prayer-global.sql",
     "db:reset:local": "npm run db:schema:local && npm run db:seed:local",
     "db:schema:remote": "wrangler d1 execute masjid-db --remote --file=./schema-d1.sql",
     "db:seed:remote": "wrangler d1 execute masjid-db --remote --file=./seed-d1.sql",

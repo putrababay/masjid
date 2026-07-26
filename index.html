@@ -1061,13 +1061,20 @@
 
       async function updateDates() {
         try {
-          const res = await fetch("https://api.myquran.com/v3/cal/today");
-          const r = await res.json();
-          if (r.status) {
+          let data = null;
+          try {
+            const proxied = await MasjidDB.calendarToday();
+            data = proxied.calendar;
+          } catch {
+            const res = await fetch("https://api.myquran.com/v3/cal/today");
+            const r = await res.json();
+            if (r.status) data = r.data;
+          }
+          if (data?.hijr && data?.ce) {
             document.getElementById(
               "hijri-date"
-            ).innerText = `${r.data.hijr.day} ${r.data.hijr.monthName} ${r.data.hijr.year} H`;
-            document.getElementById("masehi-date").innerText = r.data.ce.today;
+            ).innerText = `${data.hijr.day} ${data.hijr.monthName} ${data.hijr.year} H`;
+            document.getElementById("masehi-date").innerText = data.ce.today;
           }
         } catch (e) {
           console.error("Date Error");
@@ -1089,9 +1096,24 @@
 
       async function getPrayerTimesPemerintah() {
         const date = getTodayDateYmd();
+        const locationId =
+          textDbConfig?.locationId || textDbDefaults.locationId;
         const lat = textDbConfig?.khgt?.lat ?? textDbDefaults.khgt.lat;
         const lng = textDbConfig?.khgt?.lng ?? textDbDefaults.khgt.lng;
-        const data = await MasjidDB.fetchNu({ lat, lng, date });
+        const data = await MasjidDB.fetchNu({ locationId, lat, lng, date });
+        if (data.jadwal) {
+          const j = data.jadwal;
+          return {
+            imsak: normalizeTimeText(j.imsak),
+            subuh: normalizeTimeText(j.subuh),
+            terbit: normalizeTimeText(j.terbit),
+            dhuha: normalizeTimeText(j.dhuha),
+            dzuhur: normalizeTimeText(j.dzuhur),
+            ashar: normalizeTimeText(j.ashar),
+            maghrib: normalizeTimeText(j.maghrib),
+            isya: normalizeTimeText(j.isya),
+          };
+        }
         const timings = data.timings || {};
         return {
           imsak: normalizeTimeText(timings.Imsak),
@@ -1165,11 +1187,10 @@
           rawProvider === "KHGT" || rawProvider === "MUHAMMADIYAH" ? "KHGT" : "NU";
         activePrayerSource = provider.toLowerCase();
 
-        const mosqueId = getMosqueQueryId() || textDbConfig.mosqueId;
         const date = getTodayDateYmd();
         const [nuDb, khgtDb] = await Promise.all([
-          MasjidDB.getTodaySchedule(mosqueId, "NU", date).catch(() => ({ schedule: null })),
-          MasjidDB.getTodaySchedule(mosqueId, "KHGT", date).catch(() => ({ schedule: null })),
+          MasjidDB.getTodaySchedule("NU", date).catch(() => ({ schedule: null })),
+          MasjidDB.getTodaySchedule("KHGT", date).catch(() => ({ schedule: null })),
         ]);
         const fromStored = (row) =>
           row

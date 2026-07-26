@@ -120,9 +120,9 @@
     async deleteSlider(id) {
       return request("delete_slider", { method: "POST", data: { id } });
     },
-    async listPrayers(mosqueId, provider, from, to) {
+    async listPrayers(provider, from, to) {
       return request("prayers", {
-        params: { mosqueId, provider, from, to },
+        params: { provider, from, to },
       });
     },
     async savePrayer(schedule) {
@@ -131,22 +131,36 @@
         data: { schedule },
       });
     },
-    async deletePrayer(id, mosqueId) {
+    async deletePrayer(id) {
       return request("delete_prayer", {
         method: "POST",
-        data: { id, mosqueId },
+        data: { id },
       });
     },
-    async importPrayerMonth(mosqueId, provider, year, month) {
+    async importPrayerMonth(provider, year, month, options = {}) {
       return request("import_prayer_month", {
         method: "POST",
-        data: { mosqueId, provider, year, month },
+        data: {
+          provider,
+          year,
+          month,
+          locationId: options.locationId || "",
+          latitude: options.latitude,
+          longitude: options.longitude,
+        },
       });
     },
-    async getTodaySchedule(mosqueId, provider, date) {
+    async getTodaySchedule(provider, date, mosqueId) {
       return request("today_schedule", {
-        params: { mosqueId, provider, date },
+        params: {
+          provider,
+          date,
+          ...(mosqueId ? { mosqueId } : {}),
+        },
       });
+    },
+    async calendarToday() {
+      return request("calendar_today");
     },
     async dashboardStats(mosqueId, year, month) {
       return request("dashboard_stats", {
@@ -193,12 +207,11 @@
       }
       return result.data;
     },
-    async fetchNu({ lat, lng, date }) {
-      const params = new URLSearchParams({
-        lat: String(lat),
-        lng: String(lng),
-        date: String(date),
-      });
+    async fetchNu({ lat, lng, date, locationId }) {
+      const params = new URLSearchParams({ date: String(date) });
+      if (locationId) params.set("locationId", String(locationId));
+      if (lat != null) params.set("lat", String(lat));
+      if (lng != null) params.set("lng", String(lng));
       const response = await fetch(`/api/nu?${params.toString()}`);
       const result = await response.json();
       if (!response.ok || !result.ok) {

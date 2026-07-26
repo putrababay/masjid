@@ -119,6 +119,7 @@
 
   <script src="js/db.js"></script>
   <script src="js/admin-shell.js"></script>
+  <script src="js/mosque-table.js"></script>
   <script>
     let slidesState = [];
     let editingIndex = -1;
@@ -213,22 +214,7 @@
       resetSlideForm();
     }
 
-    (async () => {
-      const user = await AdminShell.mount({
-        page: "slider",
-        title: "Master Slider",
-      });
-      if (!user) return;
-
-      const mosqueSelect = document.getElementById("mosqueSelect");
-      const mosques = await MasjidDB.listAdminMosques();
-      const list = mosques.mosques || [];
-      mosqueSelect.innerHTML = list
-        .map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name || m.id)}</option>`)
-        .join("");
-      const q = new URLSearchParams(location.search).get("mosque");
-      mosqueSelect.value = q || user.mosqueId || list[0]?.id || "";
-
+    function bindSliderEvents(mosqueSelect) {
       document.getElementById("slideType").addEventListener("change", renderSlidePreview);
       document.getElementById("slideIsLive").addEventListener("change", renderSlidePreview);
       document.getElementById("slideValue").addEventListener("input", renderSlidePreview);
@@ -295,7 +281,47 @@
           }
         }
       });
+    }
 
+    (async () => {
+      const user = await AdminShell.mount({
+        page: "slider",
+        title: "Master Slider",
+      });
+      if (!user) return;
+
+      const mosqueParam = new URLSearchParams(location.search).get("mosque");
+      if (user.role === "superadmin" && !mosqueParam) {
+        document.getElementById("adminContent").innerHTML =
+          '<div id="mosqueListWrap"></div>';
+        document.getElementById("adminTopMeta").textContent =
+          "Pilih masjid untuk mengelola slider";
+        await MosqueTable.render("#mosqueListWrap", {
+          editUrl: "slider.html",
+          pageLabel: "Slider",
+        });
+        return;
+      }
+
+      const mosqueSelect = document.getElementById("mosqueSelect");
+      const mosques = await MasjidDB.listAdminMosques();
+      const list = mosques.mosques || [];
+      mosqueSelect.innerHTML = list
+        .map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name || m.id)}</option>`)
+        .join("");
+      mosqueSelect.value = mosqueParam || user.mosqueId || list[0]?.id || "";
+
+      if (user.role === "superadmin") {
+        const back = document.createElement("a");
+        back.href = "slider.html";
+        back.className = "btn btn-outline-secondary btn-sm";
+        back.textContent = "← Daftar Masjid";
+        document.getElementById("adminTopActions")?.prepend(back);
+      } else {
+        mosqueSelect.disabled = true;
+      }
+
+      bindSliderEvents(mosqueSelect);
       try {
         await loadSlides();
       } catch (err) {
