@@ -519,39 +519,81 @@ async function mapWithConcurrency(values, limit, mapper) {
   return results;
 }
 
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchKhgtDay(latitude, longitude, date, retries = 3) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      const url = new URL("https://khgt.muhammadiyah.or.id/prayer");
+      url.searchParams.set("lat", String(latitude));
+      url.searchParams.set("long", String(longitude));
+      url.searchParams.set("date", date);
+      const result = await fetch(url.toString(), {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "MasjidTV/1.0",
+        },
+      });
+      if (!result.ok) {
+        lastError = new Error(`HTTP ${result.status}`);
+        await sleep(400 * attempt);
+        continue;
+      }
+      const json = await result.json();
+      const times = json.times || {};
+      const subuh = cleanTime(times.subuh);
+      const terbit = cleanTime(times.terbit);
+      const dzuhur = cleanTime(times.zuhur || times.dzuhur);
+      const ashar = cleanTime(times.ashar);
+      const maghrib = cleanTime(times.maghrib);
+      const isya = cleanTime(times.isya);
+      if (!subuh || !dzuhur || !ashar || !maghrib || !isya) {
+        lastError = new Error("Data waktu tidak lengkap");
+        await sleep(300 * attempt);
+        continue;
+      }
+      const [sh, sm] = subuh.split(":").map(Number);
+      const imsakMinutes = sh * 60 + sm - 10;
+      const imsakH = String(Math.floor(((imsakMinutes % 1440) + 1440) % 1440 / 60)).padStart(2, "0");
+      const imsakM = String(((imsakMinutes % 1440) + 1440) % 1440 % 60).padStart(2, "0");
+      return {
+        date,
+        imsak: `${imsakH}:${imsakM}`,
+        subuh,
+        terbit,
+        dhuha: terbit,
+        dzuhur,
+        ashar,
+        maghrib,
+        isya,
+      };
+    } catch (error) {
+      lastError = error;
+      await sleep(500 * attempt);
+    }
+  }
+  return {
+    date,
+    error: lastError?.message || "Gagal mengambil KHGT",
+  };
+}
+
 async function fetchKhgtMonth(latitude, longitude, year, month) {
   const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const dates = Array.from({ length: days }, (_, index) => {
     const day = String(index + 1).padStart(2, "0");
     return `${year}-${String(month).padStart(2, "0")}-${day}`;
   });
-  return mapWithConcurrency(dates, 5, async (date) => {
-    const url = new URL("https://khgt.muhammadiyah.or.id/prayer");
-    url.searchParams.set("lat", latitude);
-    url.searchParams.set("long", longitude);
-    url.searchParams.set("date", date);
-    const result = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!result.ok) throw new ApiError(502, `KHGT gagal pada ${date}`);
-    const json = await result.json();
-    const times = json.times || {};
-    const subuh = cleanTime(times.subuh);
-    const terbit = cleanTime(times.terbit);
-    const subuhDate = new Date(`${date}T${subuh}:00Z`);
-    const imsak = new Date(subuhDate.getTime() - 10 * 60000)
-      .toISOString()
-      .slice(11, 16);
-    return {
-      date,
-      imsak,
-      subuh,
-      terbit,
-      dhuha: terbit,
-      dzuhur: cleanTime(times.zuhur || times.dzuhur),
-      ashar: cleanTime(times.ashar),
-      maghrib: cleanTime(times.maghrib),
-      isya: cleanTime(times.isya),
-    };
-  });
+  // Concurrency rendah supaya server KHGT tidak sering 500.
+  const rows = await mapWithConcurrency(dates, 2, (date) =>
+    fetchKhgtDay(latitude, longitude, date, 3)
+  );
+  const items = rows.filter((row) => row && !row.error && row.subuh);
+  const failed = rows.filter((row) => row && row.error).map((row) => row.date);
+  return { items, failed };
 }
 
 async function importPrayerMonth(db, payload, actor) {
@@ -570,10 +612,32 @@ async function importPrayerMonth(db, payload, actor) {
   const lat = Number.isFinite(latitude) ? latitude : -7.4467;
   const lng = Number.isFinite(longitude) ? longitude : 112.7181;
 
-  const items =
-    provider === "KHGT"
-      ? await fetchKhgtMonth(lat, lng, year, month)
-      : await fetchMyQuranMonth(locationId, year, month);
+  let items = [];
+  let failed = [];
+  if (provider === "KHGT") {
+    const result = await fetchKhgtMonth(lat, lng, year, month);
+    items = result.items || [];
+    failed = result.failed || [];
+  } else {
+    items = await fetchMyQuranMonth(locationId, year, month);
+  }
+
+  if (!items.length) {
+    return response({
+      ok: true,
+      imported: 0,
+      failed: failed.length,
+      failedDates: failed.slice(0, 31),
+      provider,
+      year,
+      month,
+      message:
+        provider === "KHGT"
+          ? "Tidak ada jadwal KHGT tersimpan. Server KHGT sering gagal untuk tanggal tertentu (mis. setelah 2026-07-31)."
+          : "Tidak ada jadwal NU yang bisa diimpor.",
+    });
+  }
+
   const source =
     provider === "KHGT"
       ? "khgt.muhammadiyah.or.id"
@@ -610,12 +674,18 @@ async function importPrayerMonth(db, payload, actor) {
   return response({
     ok: true,
     imported: items.length,
+    failed: failed.length,
+    failedDates: failed.slice(0, 31),
     provider,
     year,
     month,
     locationId: provider === "NU" ? locationId : undefined,
     latitude: provider === "KHGT" ? lat : undefined,
     longitude: provider === "KHGT" ? lng : undefined,
+    message:
+      failed.length > 0
+        ? `Tersimpan ${items.length} hari, ${failed.length} hari dilewati (server sumber gagal).`
+        : `Tersimpan ${items.length} hari.`,
   });
 }
 

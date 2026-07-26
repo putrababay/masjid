@@ -27,7 +27,9 @@
       <h5 class="mb-2">Impor Jadwal Global</h5>
       <p class="small text-secondary mb-3">
         Impor sekali untuk semua masjid. Masing-masing masjid hanya memilih NU / KHGT di Setting.
-        Sumber NU: <a href="https://api.myquran.com/v3/cal/today" target="_blank" rel="noopener">MyQuran</a>.
+        Sumber NU: <a href="https://api.myquran.com/v3/cal/today" target="_blank" rel="noopener">MyQuran</a>
+        (bulanan). Sumber KHGT: API Muhammadiyah per hari — jika server mereka error untuk tanggal tertentu,
+        hari itu dilewati dan impor tetap lanjut (tidak perlu diklik ulang).
       </p>
       <div class="row g-2 align-items-end">
         <div class="col-md-2">
@@ -206,22 +208,37 @@
         latitude: Number(el.khgtLat.value),
         longitude: Number(el.khgtLng.value),
       };
-      try {
-        for (let index = 0; index < jobs.length; index += 1) {
-          const job = jobs[index];
-          el.importStatus.textContent = `Mengambil ${job.provider} ${job.month}/${job.year}...`;
-          await MasjidDB.importPrayerMonth(job.provider, job.year, job.month, options);
-          const percent = Math.round(((index + 1) / jobs.length) * 100);
-          el.importProgress.style.width = `${percent}%`;
-          el.importProgress.textContent = `${percent}%`;
+      let importedTotal = 0;
+      let failedTotal = 0;
+      const notes = [];
+      for (let index = 0; index < jobs.length; index += 1) {
+        const job = jobs[index];
+        el.importStatus.textContent = `Mengambil ${job.provider} ${job.month}/${job.year}...`;
+        try {
+          const result = await MasjidDB.importPrayerMonth(
+            job.provider, job.year, job.month, options
+          );
+          importedTotal += Number(result.imported || 0);
+          failedTotal += Number(result.failed || 0);
+          if (result.failed > 0) {
+            notes.push(
+              `${job.provider} ${job.month}/${job.year}: ${result.imported || 0} ok, ${result.failed} dilewati`
+            );
+          }
+        } catch (error) {
+          failedTotal += 1;
+          notes.push(`${job.provider} ${job.month}/${job.year}: ${error.message}`);
         }
-        el.importStatus.textContent = "Impor NU (MyQuran) dan KHGT satu tahun selesai.";
-        await loadSchedules();
-      } catch (error) {
-        el.importStatus.textContent = `Impor terhenti: ${error.message}. Klik lagi untuk melanjutkan.`;
-      } finally {
-        el.importBtn.disabled = false;
+        const percent = Math.round(((index + 1) / jobs.length) * 100);
+        el.importProgress.style.width = `${percent}%`;
+        el.importProgress.textContent = `${percent}%`;
       }
+      el.importStatus.textContent =
+        `Selesai. Tersimpan ${importedTotal} baris` +
+        (failedTotal ? `, ${failedTotal} hari/bulan bermasalah (server sumber).` : ".") +
+        (notes.length ? ` Detail: ${notes.slice(0, 4).join(" · ")}` : "");
+      el.importBtn.disabled = false;
+      await loadSchedules();
     }
 
     (async () => {
