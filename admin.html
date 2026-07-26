@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - Informasi Masjid</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #f4f7f6; padding: 20px; }
+    .card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+    .section-title {
+      border-left: 5px solid #198754;
+      padding-left: 10px;
+      margin-bottom: 20px;
+      color: #198754;
+    }
+    .crud-card {
+      border: 1px solid #dbe5e1;
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+    }
+    .crud-list-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-box {
+      border: 1px dashed #94a3b8;
+      border-radius: 10px;
+      padding: 8px;
+      min-height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+    }
+    .preview-box img,
+    .preview-box iframe {
+      max-width: 100%;
+      width: 100%;
+      border-radius: 8px;
+      max-height: 220px;
+    }
+    .muted-help { font-size: 0.85rem; color: #64748b; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .gdrive-banner {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        <div class="topbar">
+          <div>
+            <h2 class="mb-0">Pengaturan TV Masjid</h2>
+            <div class="muted-help">
+              <span id="loginAs">-</span> · Masjid: <strong id="topMosqueId">-</strong>
+            </div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <a id="previewLink" href="index.html" target="_blank" class="btn btn-outline-success btn-sm">Preview TV</a>
+            <a id="masterLink" href="user_masjid.html" class="btn btn-outline-primary btn-sm" style="display:none">Master User</a>
+            <a href="login.html" class="btn btn-outline-secondary btn-sm">Halaman Awal</a>
+            <button type="button" id="logoutBtn" class="btn btn-outline-danger btn-sm">Logout</button>
+          </div>
+        </div>
+
+        <div class="card p-4">
+          <div class="gdrive-banner">
+            <strong>Media Google Drive</strong>
+            <div class="muted-help mb-1">
+              Upload gambar/video ke folder Drive, lalu tempel link file di form slide.
+            </div>
+            <a href="https://drive.google.com/drive/folders/1oX7T4ZEZpJXi6FSOXKw8fkLB99PjMhgC?usp=sharing"
+              target="_blank" rel="noopener">Buka folder Google Drive media</a>
+          </div>
+
+          <form id="adminForm">
+            <h5 class="section-title">Identitas Masjid</h5>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Sumber Jadwal Sholat</label>
+                <select name="prayerProvider" class="form-select">
+                  <option value="pemerintah">Pemerintah (MyQuran)</option>
+                  <option value="muhammadiyah">Muhammadiyah (KHGT)</option>
+                </select>
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">KHGT Lat</label>
+                <input type="number" step="any" name="khgtLat" class="form-control" value="-7.4467" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">KHGT Lng</label>
+                <input type="number" step="any" name="khgtLng" class="form-control" value="112.7181" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">ID Lokasi MyQuran</label>
+              <input type="text" name="locationId" class="form-control" value="cfa0860e83a4c3a763a7e62d825349f7" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nama Masjid</label>
+              <input type="text" name="masjidName" class="form-control" value="MASJID AN-NUR SIDOARJO" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Alamat</label>
+              <textarea name="masjidAddress" class="form-control" rows="2">Jl. Mojopahit No.666, Celep, Kabupaten Sidoarjo</textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">ID Masjid</label>
+                <input type="text" name="mosqueId" id="mosqueIdInput" class="form-control" value="MNR-SDA01" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Kapasitas</label>
+                <input type="text" name="capacity" class="form-control" value="800 Jamaah" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Ketua</label>
+                <input type="text" name="chairman" class="form-control" value="H. Ahmad Fulan" />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Sekretaris</label>
+                <input type="text" name="secretary" class="form-control" value="Budi Santoso, ST" />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Bendahara</label>
+                <input type="text" name="treasurer" class="form-control" value="H. M. Mansur" />
+              </div>
+            </div>
+
+            <h5 class="section-title">Media & YouTube / Google Drive</h5>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Video ID (Reguler / fallback)</label>
+                <input type="text" name="regularVideoId" class="form-control" placeholder="F8121v_ER9M" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Video ID (Live Stream / fallback)</label>
+                <input type="text" name="liveVideoId" class="form-control" placeholder="OFLYbSRpMdg" />
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">URL Folder Google Drive</label>
+              <input type="url" name="gdriveFolderUrl" class="form-control"
+                value="https://drive.google.com/drive/folders/1oX7T4ZEZpJXi6FSOXKw8fkLB99PjMhgC?usp=sharing" />
+            </div>
+
+            <div class="crud-card mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label mb-0 fw-bold">Slide Dinamis (CRUD)</label>
+                <button type="button" class="btn btn-success btn-sm" id="addSlideBtn">+ Tambah Slide</button>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Tipe</label>
+                  <select id="slideType" class="form-select">
+                    <option value="image">Image (lokal / Drive)</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="gdrive">Video Google Drive</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Mode Video</label>
+                  <select id="slideIsLive" class="form-select">
+                    <option value="regular">Regular</option>
+                    <option value="live">Live</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Durasi (detik)</label>
+                  <input type="number" id="slideDuration" class="form-control" min="5" value="15" />
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Nilai media</label>
+                  <input type="text" id="slideValue" class="form-control"
+                    placeholder="1.jpg · YouTube ID · atau link Google Drive file" />
+                </div>
+                <div class="col-12">
+                  <div class="preview-box" id="slidePreviewBox">
+                    <span class="muted-help">Preview media akan tampil di sini</span>
+                  </div>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                  <button type="button" class="btn btn-primary btn-sm" id="saveSlideBtn">Simpan Slide</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="resetSlideBtn">Reset Form Slide</button>
+                </div>
+              </div>
+              <hr />
+              <div id="slideList"></div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Judul QRIS</label>
+              <input type="text" name="qrisTitle" class="form-control" value="Infaq & Sedekah" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">URL Gambar QRIS (boleh link Google Drive)</label>
+              <input type="text" name="qrisImageUrl" class="form-control"
+                value="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=DonasiMasjidAnNurSidoarjo" />
+              <div class="preview-box mt-2" id="qrisPreviewBox">
+                <span class="muted-help">Preview QRIS</span>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Caption QRIS</label>
+              <input type="text" name="qrisCaption" class="form-control" value="Scan QRIS a.n Masjid An-Nur" />
+            </div>
+
+            <h5 class="section-title">Laporan Keuangan</h5>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Saldo Awal</label>
+                <input type="text" name="balanceStart" class="form-control" value="Rp 15.000.000" />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Pemasukan</label>
+                <input type="text" name="income" class="form-control" value="Rp 5.500.000" />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Pengeluaran</label>
+                <input type="text" name="expense" class="form-control" value="Rp 2.150.000" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Saldo Akhir</label>
+                <input type="text" name="balanceEnd" class="form-control" value="Rp 18.350.000" />
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Tanggal Update</label>
+                <input type="text" name="balanceUpdatedAt" class="form-control" value="10 Maret 2026" />
+              </div>
+            </div>
+
+            <h5 class="section-title">Pesan Berjalan (Marquee)</h5>
+            <div class="crud-card mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label mb-0 fw-bold">Pesan Berjalan (CRUD)</label>
+                <button type="button" class="btn btn-success btn-sm" id="addRunningTextBtn">+ Tambah Pesan</button>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col-12">
+                  <textarea id="runningTextInput" class="form-control" rows="2"
+                    placeholder="Tulis isi pesan berjalan..."></textarea>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                  <button type="button" class="btn btn-primary btn-sm" id="saveRunningTextBtn">Simpan Pesan</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="resetRunningTextBtn">Reset</button>
+                </div>
+              </div>
+              <div id="runningTextList"></div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold">SIMPAN PERUBAHAN</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script>
+    let CURRENT_MOSQUE_ID = "MNR-SDA01";
+    let currentUser = null;
+    const form = document.getElementById("adminForm");
+    let slidesState = [];
+    let runningTextsState = [];
+    let editingSlideIndex = -1;
+    let editingRunningTextIndex = -1;
+
+    const el = {
+      slideType: document.getElementById("slideType"),
+      slideIsLive: document.getElementById("slideIsLive"),
+      slideValue: document.getElementById("slideValue"),
+      slideDuration: document.getElementById("slideDuration"),
+      slidePreviewBox: document.getElementById("slidePreviewBox"),
+      addSlideBtn: document.getElementById("addSlideBtn"),
+      saveSlideBtn: document.getElementById("saveSlideBtn"),
+      resetSlideBtn: document.getElementById("resetSlideBtn"),
+      slideList: document.getElementById("slideList"),
+      runningTextInput: document.getElementById("runningTextInput"),
+      addRunningTextBtn: document.getElementById("addRunningTextBtn"),
+      saveRunningTextBtn: document.getElementById("saveRunningTextBtn"),
+      resetRunningTextBtn: document.getElementById("resetRunningTextBtn"),
+      runningTextList: document.getElementById("runningTextList"),
+      qrisPreviewBox: document.getElementById("qrisPreviewBox"),
+      previewLink: document.getElementById("previewLink"),
+      topMosqueId: document.getElementById("topMosqueId"),
+      loginAs: document.getElementById("loginAs"),
+      masterLink: document.getElementById("masterLink"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      mosqueIdInput: document.getElementById("mosqueIdInput"),
+    };
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function normalizeMediaValue(type, value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (type === "youtube") {
+        const yt = raw.match(/(?:youtu\.be\/|v=|embed\/)([a-zA-Z0-9_-]{6,})/);
+        return yt ? yt[1] : raw;
+      }
+      return raw;
+    }
+
+    function renderSlidePreview() {
+      const type = el.slideType.value;
+      const value = normalizeMediaValue(type, el.slideValue.value);
+      if (!value) {
+        el.slidePreviewBox.innerHTML = '<span class="muted-help">Preview media akan tampil di sini</span>';
+        return;
+      }
+      if (type === "image") {
+        const src = MasjidDB.toDriveImageUrl(value);
+        el.slidePreviewBox.innerHTML = `<img src="${escapeHtml(src)}" alt="Preview" onerror="this.outerHTML='<span class=&quot;muted-help&quot;>Gagal load image. Share Drive: Anyone with the link.</span>'">`;
+        return;
+      }
+      if (type === "gdrive") {
+        const src = MasjidDB.toDriveEmbedUrl(value);
+        el.slidePreviewBox.innerHTML = `<iframe height="200" src="${escapeHtml(src)}" title="Preview Drive" allow="autoplay" allowfullscreen></iframe>`;
+        return;
+      }
+      const isLive = el.slideIsLive.value === "live";
+      const youtubeSrc = `https://www.youtube.com/embed/${encodeURIComponent(value)}?rel=0&modestbranding=1${isLive ? "" : "&start=0"}`;
+      el.slidePreviewBox.innerHTML = `<iframe height="180" src="${youtubeSrc}" title="Preview YouTube" frameborder="0" allowfullscreen></iframe>`;
+    }
+
+    function renderQrisPreview() {
+      const raw = form.elements.qrisImageUrl?.value || "";
+      const src = MasjidDB.toDriveImageUrl(raw);
+      if (!src) {
+        el.qrisPreviewBox.innerHTML = '<span class="muted-help">Preview QRIS</span>';
+        return;
+      }
+      el.qrisPreviewBox.innerHTML = `<img src="${escapeHtml(src)}" alt="QRIS" style="max-width:180px" onerror="this.outerHTML='<span class=&quot;muted-help&quot;>Gagal load QRIS</span>'">`;
+    }
+
+    function resetSlideForm() {
+      editingSlideIndex = -1;
+      el.slideType.value = "image";
+      el.slideIsLive.value = "regular";
+      el.slideValue.value = "";
+      el.slideDuration.value = "15";
+      renderSlidePreview();
+    }
+
+    function renderSlidesList() {
+      if (!slidesState.length) {
+        el.slideList.innerHTML = '<div class="muted-help">Belum ada slide.</div>';
+        return;
+      }
+      el.slideList.innerHTML = slidesState
+        .map((slide, idx) => {
+          let label = "";
+          if (slide.type === "youtube") label = `YouTube (${slide.isLive ? "Live" : "Regular"}): ${escapeHtml(slide.value)}`;
+          else if (slide.type === "gdrive") label = `Google Drive Video: ${escapeHtml(slide.value)}`;
+          else label = `Image: ${escapeHtml(slide.value)}`;
+          return `<div class="crud-list-item">
+            <div>${idx + 1}. ${label}</div>
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-outline-primary btn-sm" data-edit-slide="${idx}">Edit</button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-del-slide="${idx}">Hapus</button>
+            </div>
+          </div>`;
+        })
+        .join("");
+    }
+
+    function resetRunningTextForm() {
+      editingRunningTextIndex = -1;
+      el.runningTextInput.value = "";
+    }
+
+    function renderRunningTextList() {
+      if (!runningTextsState.length) {
+        el.runningTextList.innerHTML = '<div class="muted-help">Belum ada pesan berjalan.</div>';
+        return;
+      }
+      el.runningTextList.innerHTML = runningTextsState
+        .map((text, idx) => `<div class="crud-list-item">
+          <div>${idx + 1}. ${escapeHtml(text)}</div>
+          <div class="d-flex gap-1">
+            <button type="button" class="btn btn-outline-primary btn-sm" data-edit-rt="${idx}">Edit</button>
+            <button type="button" class="btn btn-outline-danger btn-sm" data-del-rt="${idx}">Hapus</button>
+          </div>
+        </div>`)
+        .join("");
+    }
+
+    function fillForm(settings) {
+      Object.keys(settings).forEach((key) => {
+        const input = form.elements[key];
+        if (key === "runningTexts" && Array.isArray(settings.runningTexts)) {
+          runningTextsState = [...settings.runningTexts];
+          renderRunningTextList();
+        } else if (key === "slides" && Array.isArray(settings.slides)) {
+          slidesState = settings.slides
+            .filter((s) => s && s.type && s.value)
+            .map((s) => ({
+              type: ["youtube", "gdrive", "image"].includes(s.type) ? s.type : "image",
+              value: String(s.value).trim(),
+              isLive: !!s.isLive,
+              duration: Number(s.duration) || 15,
+            }));
+          renderSlidesList();
+        } else if (key === "khgt" && settings.khgt) {
+          if (form.elements.khgtLat) form.elements.khgtLat.value = settings.khgt.lat ?? "";
+          if (form.elements.khgtLng) form.elements.khgtLng.value = settings.khgt.lng ?? "";
+        } else if (input && typeof settings[key] === "string") {
+          input.value = settings[key];
+        }
+      });
+
+      const mid = settings.mosqueId || CURRENT_MOSQUE_ID;
+      CURRENT_MOSQUE_ID = mid;
+      if (form.elements.mosqueId) form.elements.mosqueId.value = mid;
+      el.topMosqueId.textContent = mid;
+      el.previewLink.href = `index.html?mosque=${encodeURIComponent(mid)}`;
+      renderQrisPreview();
+    }
+
+    el.slideList.addEventListener("click", (e) => {
+      const editIdx = e.target.getAttribute("data-edit-slide");
+      const delIdx = e.target.getAttribute("data-del-slide");
+      if (editIdx !== null) {
+        const idx = Number(editIdx);
+        const slide = slidesState[idx];
+        if (!slide) return;
+        editingSlideIndex = idx;
+        el.slideType.value = slide.type;
+        el.slideIsLive.value = slide.isLive ? "live" : "regular";
+        el.slideValue.value = slide.value || "";
+        el.slideDuration.value = slide.duration || 15;
+        renderSlidePreview();
+      }
+      if (delIdx !== null) {
+        slidesState.splice(Number(delIdx), 1);
+        renderSlidesList();
+        resetSlideForm();
+      }
+    });
+
+    el.runningTextList.addEventListener("click", (e) => {
+      const editIdx = e.target.getAttribute("data-edit-rt");
+      const delIdx = e.target.getAttribute("data-del-rt");
+      if (editIdx !== null) {
+        editingRunningTextIndex = Number(editIdx);
+        el.runningTextInput.value = runningTextsState[editingRunningTextIndex] || "";
+      }
+      if (delIdx !== null) {
+        runningTextsState.splice(Number(delIdx), 1);
+        renderRunningTextList();
+        resetRunningTextForm();
+      }
+    });
+
+    form.onsubmit = async function (e) {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const settings = Object.fromEntries(formData.entries());
+      settings.runningTexts = [...runningTextsState];
+      settings.slides = [...slidesState];
+      settings.qrisImageUrl = MasjidDB.toDriveImageUrl(settings.qrisImageUrl || "");
+      const parsedLat = Number(settings.khgtLat);
+      const parsedLng = Number(settings.khgtLng);
+      settings.khgt = {
+        lat: Number.isFinite(parsedLat) ? parsedLat : -7.4467,
+        lng: Number.isFinite(parsedLng) ? parsedLng : 112.7181,
+      };
+      delete settings.khgtLat;
+      delete settings.khgtLng;
+
+      try {
+        await MasjidDB.saveSettings(settings.mosqueId || CURRENT_MOSQUE_ID, settings);
+        alert("Data berhasil disimpan.");
+      } catch (err) {
+        alert("Gagal menyimpan: " + err.message);
+      }
+    };
+
+    el.slideType.addEventListener("change", renderSlidePreview);
+    el.slideIsLive.addEventListener("change", renderSlidePreview);
+    el.slideValue.addEventListener("input", renderSlidePreview);
+    el.addSlideBtn.addEventListener("click", resetSlideForm);
+    el.resetSlideBtn.addEventListener("click", resetSlideForm);
+    form.elements.qrisImageUrl?.addEventListener("input", renderQrisPreview);
+
+    el.saveSlideBtn.addEventListener("click", () => {
+      const type = el.slideType.value;
+      const value = normalizeMediaValue(type, el.slideValue.value);
+      if (!value) {
+        alert("Nilai slide tidak boleh kosong.");
+        return;
+      }
+      const newSlide = {
+        type,
+        value,
+        isLive: type === "youtube" && el.slideIsLive.value === "live",
+        duration: Number(el.slideDuration.value) || 15,
+      };
+      if (editingSlideIndex >= 0) slidesState[editingSlideIndex] = newSlide;
+      else slidesState.push(newSlide);
+      renderSlidesList();
+      resetSlideForm();
+    });
+
+    el.addRunningTextBtn.addEventListener("click", resetRunningTextForm);
+    el.resetRunningTextBtn.addEventListener("click", resetRunningTextForm);
+    el.saveRunningTextBtn.addEventListener("click", () => {
+      const text = (el.runningTextInput.value || "").trim();
+      if (!text) {
+        alert("Pesan berjalan tidak boleh kosong.");
+        return;
+      }
+      if (editingRunningTextIndex >= 0) runningTextsState[editingRunningTextIndex] = text;
+      else runningTextsState.push(text);
+      renderRunningTextList();
+      resetRunningTextForm();
+    });
+
+    el.logoutBtn.addEventListener("click", () => {
+      MasjidDB.logout();
+      window.location.href = "login.html";
+    });
+
+    (async () => {
+      await MasjidDB.ready();
+      currentUser = MasjidDB.requireLogin(["user_masjid", "superadmin"]);
+      if (!currentUser) return;
+
+      el.loginAs.textContent = currentUser.name || currentUser.username;
+      if (currentUser.role === "superadmin") {
+        el.masterLink.style.display = "";
+        const q = new URLSearchParams(location.search).get("mosque");
+        CURRENT_MOSQUE_ID = q || currentUser.mosqueId || "MNR-SDA01";
+      } else {
+        CURRENT_MOSQUE_ID = currentUser.mosqueId || "MNR-SDA01";
+        el.mosqueIdInput.readOnly = true;
+      }
+
+      el.topMosqueId.textContent = CURRENT_MOSQUE_ID;
+      el.previewLink.href = `index.html?mosque=${encodeURIComponent(CURRENT_MOSQUE_ID)}`;
+
+      resetSlideForm();
+      renderSlidesList();
+      resetRunningTextForm();
+      renderRunningTextList();
+
+      const data = await MasjidDB.getSettings(CURRENT_MOSQUE_ID);
+      if (data.settings) fillForm(data.settings);
+    })();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Master User Masjid</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #f4f7f6; padding: 20px; }
+    .card { border-radius: 15px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+    .section-title {
+      border-left: 5px solid #198754;
+      padding-left: 10px;
+      margin-bottom: 20px;
+      color: #198754;
+    }
+    .crud-card {
+      border: 1px solid #dbe5e1;
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+    }
+    .crud-list-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .muted-help { font-size: 0.85rem; color: #64748b; }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-lg-9">
+        <div class="topbar">
+          <div>
+            <h2 class="mb-0">Master User Masjid</h2>
+            <div class="muted-help" id="loginAs">Memuat...</div>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="login.html" class="btn btn-outline-secondary btn-sm">Halaman Awal</a>
+            <button type="button" id="logoutBtn" class="btn btn-outline-danger btn-sm">Logout</button>
+          </div>
+        </div>
+
+        <div class="card p-4">
+          <h5 class="section-title">CRUD User Masjid</h5>
+          <div class="crud-card mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0 fw-bold">Form User</label>
+              <button type="button" class="btn btn-success btn-sm" id="addUserBtn">+ Tambah User</button>
+            </div>
+            <form id="userForm">
+              <input type="hidden" id="userId" />
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Nama</label>
+                  <input type="text" id="userName" class="form-control" required placeholder="Takmir Masjid..." />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Username</label>
+                  <input type="text" id="userUsername" class="form-control" required placeholder="username" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Password</label>
+                  <input type="text" id="userPassword" class="form-control"
+                    placeholder="Wajib untuk user baru / isi untuk ganti" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Role</label>
+                  <select id="userRole" class="form-select">
+                    <option value="user_masjid">user_masjid</option>
+                    <option value="superadmin">superadmin</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">ID Masjid</label>
+                  <input type="text" id="userMosqueId" class="form-control" placeholder="MNR-SDA01" />
+                  <div class="muted-help">Wajib untuk role user_masjid.</div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Status</label>
+                  <select id="userActive" class="form-select">
+                    <option value="1">Aktif</option>
+                    <option value="0">Nonaktif</option>
+                  </select>
+                </div>
+                <div class="col-12 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary btn-sm">Simpan User</button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="resetUserBtn">Reset Form</button>
+                </div>
+              </div>
+            </form>
+            <hr />
+            <div id="userList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script>
+    let usersState = [];
+    let editingUserId = "";
+    let currentUser = null;
+
+    const el = {
+      form: document.getElementById("userForm"),
+      userId: document.getElementById("userId"),
+      userName: document.getElementById("userName"),
+      userUsername: document.getElementById("userUsername"),
+      userPassword: document.getElementById("userPassword"),
+      userRole: document.getElementById("userRole"),
+      userMosqueId: document.getElementById("userMosqueId"),
+      userActive: document.getElementById("userActive"),
+      addUserBtn: document.getElementById("addUserBtn"),
+      resetUserBtn: document.getElementById("resetUserBtn"),
+      userList: document.getElementById("userList"),
+      loginAs: document.getElementById("loginAs"),
+      logoutBtn: document.getElementById("logoutBtn"),
+    };
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function resetUserForm() {
+      editingUserId = "";
+      el.userId.value = "";
+      el.userName.value = "";
+      el.userUsername.value = "";
+      el.userPassword.value = "";
+      el.userRole.value = "user_masjid";
+      el.userMosqueId.value = "";
+      el.userActive.value = "1";
+      toggleMosqueField();
+    }
+
+    function toggleMosqueField() {
+      const needMosque = el.userRole.value === "user_masjid";
+      el.userMosqueId.disabled = !needMosque;
+      if (!needMosque) el.userMosqueId.value = "";
+    }
+
+    function renderUserList() {
+      if (!usersState.length) {
+        el.userList.innerHTML = '<div class="muted-help">Belum ada user.</div>';
+        return;
+      }
+
+      el.userList.innerHTML = usersState
+        .map((u) => {
+          const status = u.isActive ? "Aktif" : "Nonaktif";
+          const mosque = u.mosqueId || "-";
+          const preview =
+            u.role === "user_masjid" && u.mosqueId
+              ? `<a class="btn btn-outline-success btn-sm" target="_blank" href="index.html?mosque=${encodeURIComponent(u.mosqueId)}">Preview</a>`
+              : "";
+          return `<div class="crud-list-item">
+            <div>
+              <strong>${escapeHtml(u.name)}</strong> (@${escapeHtml(u.username)})<br>
+              <span class="muted-help">${escapeHtml(u.role)} · Masjid: ${escapeHtml(mosque)} · ${status}</span>
+            </div>
+            <div class="d-flex gap-1">
+              ${preview}
+              <button type="button" class="btn btn-outline-primary btn-sm" data-edit="${escapeHtml(u.id)}">Edit</button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-del="${escapeHtml(u.id)}">Hapus</button>
+            </div>
+          </div>`;
+        })
+        .join("");
+    }
+
+    function editUser(id) {
+      const u = usersState.find((x) => x.id === id);
+      if (!u) return;
+      editingUserId = id;
+      el.userId.value = u.id;
+      el.userName.value = u.name || "";
+      el.userUsername.value = u.username || "";
+      el.userPassword.value = "";
+      el.userRole.value = u.role || "user_masjid";
+      el.userMosqueId.value = u.mosqueId || "";
+      el.userActive.value = u.isActive ? "1" : "0";
+      toggleMosqueField();
+    }
+
+    async function deleteUser(id) {
+      if (!confirm("Hapus user ini?")) return;
+      try {
+        const result = await MasjidDB.deleteUser(id);
+        usersState = result.users || [];
+        renderUserList();
+        resetUserForm();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function loadUsers() {
+      const data = await MasjidDB.listUsers();
+      usersState = data.users || [];
+      renderUserList();
+    }
+
+    el.form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        const result = await MasjidDB.saveUser({
+          id: editingUserId || undefined,
+          name: el.userName.value.trim(),
+          username: el.userUsername.value.trim(),
+          password: el.userPassword.value,
+          role: el.userRole.value,
+          mosqueId: el.userMosqueId.value.trim(),
+          isActive: el.userActive.value === "1",
+        });
+        usersState = result.users || [];
+        renderUserList();
+        resetUserForm();
+        alert("User berhasil disimpan.");
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    el.userList.addEventListener("click", (e) => {
+      const editId = e.target.getAttribute("data-edit");
+      const delId = e.target.getAttribute("data-del");
+      if (editId) editUser(editId);
+      if (delId) deleteUser(delId);
+    });
+
+    el.userRole.addEventListener("change", toggleMosqueField);
+    el.addUserBtn.addEventListener("click", resetUserForm);
+    el.resetUserBtn.addEventListener("click", resetUserForm);
+    el.logoutBtn.addEventListener("click", () => {
+      MasjidDB.logout();
+      window.location.href = "login.html";
+    });
+
+    (async () => {
+      await MasjidDB.ready();
+      currentUser = MasjidDB.requireLogin(["superadmin"]);
+      if (!currentUser) return;
+      el.loginAs.textContent = `Login sebagai: ${currentUser.name || currentUser.username}`;
+      resetUserForm();
+      await loadUsers();
+    })();
+  </script>
+</body>
+
+</html>

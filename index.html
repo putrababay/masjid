@@ -617,10 +617,52 @@
         background: #064e3b;
         color: #ffffff;
       }
+
+      .btn-fullscreen {
+        position: fixed;
+        top: 1.2vh;
+        right: 1.2vw;
+        z-index: 10050;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(6, 78, 59, 0.88);
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 0.7vh 1.1vw;
+        cursor: pointer;
+        box-shadow: 0 0.6vh 1.6vh rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(4px);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4vw;
+        transition: background 0.2s ease, transform 0.15s ease;
+      }
+
+      .btn-fullscreen:hover {
+        background: rgba(15, 118, 110, 0.95);
+        transform: translateY(-1px);
+      }
+
+      .btn-fullscreen svg {
+        width: 1.1em;
+        height: 1.1em;
+        fill: currentColor;
+      }
     </style>
   </head>
 
   <body>
+    <button type="button" class="btn-fullscreen" id="btnFullscreen" title="Layar penuh" aria-label="Layar penuh">
+      <svg id="iconEnterFs" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+      <svg id="iconExitFs" viewBox="0 0 24 24" aria-hidden="true" style="display:none">
+        <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+      </svg>
+      <span id="fsLabel">Full Screen</span>
+    </button>
+
     <div class="app-container">
       <div class="content-area">
         <div class="slider-container" id="slider">
@@ -803,6 +845,7 @@
       </div>
     </div>
 
+    <script src="js/db.js"></script>
     <script>
       let LOKASI_ID = "cfa0860e83a4c3a763a7e62d825349f7";
       let currentJadwal = {};
@@ -861,6 +904,23 @@
 
       let textDbConfig = { ...textDbDefaults };
 
+      function getMosqueQueryId() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("mosque") || params.get("mosqueId") || params.get("id") || "";
+      }
+
+      function toDriveImageUrl(value) {
+        return window.MasjidDB
+          ? MasjidDB.toDriveImageUrl(value)
+          : String(value || "").trim();
+      }
+
+      function toDriveEmbedUrl(value) {
+        return window.MasjidDB
+          ? MasjidDB.toDriveEmbedUrl(value)
+          : String(value || "").trim();
+      }
+
       function setText(id, value) {
         const el = document.getElementById(id);
         if (el && typeof value === "string" && value.trim()) {
@@ -894,7 +954,7 @@
 
         const qrisImage = document.getElementById("qris-image");
         if (qrisImage && textDbConfig.qrisImageUrl) {
-          qrisImage.src = textDbConfig.qrisImageUrl;
+          qrisImage.src = toDriveImageUrl(textDbConfig.qrisImageUrl);
         }
 
         // Backward compatibility: jika slides belum diisi, pakai regular/live lama.
@@ -950,8 +1010,15 @@
               const isLive = slide.isLive ? "true" : "false";
               return `<div class="slider-item${isActive}" id="yt-slide-${idx}" data-type="youtube" data-videoid="${slide.value}" data-islive="${isLive}"></div>`;
             }
+            if (slide.type === "gdrive" && slide.value) {
+              const src = toDriveEmbedUrl(slide.value);
+              const duration = Number(slide.duration) || 30;
+              return `<iframe class="slider-item${isActive}" data-type="gdrive" data-duration="${duration}" src="${src}" allow="autoplay" allowfullscreen></iframe>`;
+            }
             if (slide.type === "image" && slide.value) {
-              return `<img class="slider-item${isActive}" data-type="image" src="${slide.value}" />`;
+              const src = toDriveImageUrl(slide.value);
+              const duration = Number(slide.duration) || 15;
+              return `<img class="slider-item${isActive}" data-type="image" data-duration="${duration}" src="${src}" />`;
             }
             return "";
           })
@@ -964,15 +1031,18 @@
 
       async function loadTextDatabase() {
         try {
-          const res = await fetch("db.php");
-          if (!res.ok) return;
-          const db = await res.json();
+          await MasjidDB.ready();
+          const mosqueId = getMosqueQueryId();
+          const db = await MasjidDB.getSettings(mosqueId || undefined);
           textDbConfig = {
             ...textDbDefaults,
             ...(db.settings || {}),
           };
+          if (mosqueId || textDbConfig.mosqueId) {
+            document.title = `Smart TV ${textDbConfig.masjidName || mosqueId || ""}`;
+          }
         } catch (e) {
-          console.error("Text DB Error");
+          console.error("Text DB Error", e);
         }
       }
 
@@ -1040,19 +1110,11 @@
             ? textDbConfig.khgt.lng
             : textDbDefaults.khgt.lng;
 
-        const proxyRes = await fetch(
-          `khgt-proxy.php?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(
-            lng
-          )}&date=${encodeURIComponent(dateYmd)}`
-        );
-        if (!proxyRes.ok) {
-          throw new Error("Proxy KHGT gagal");
-        }
-        const proxyJson = await proxyRes.json();
-        if (!proxyJson.ok || !proxyJson.data) {
-          throw new Error("Data KHGT dari proxy tidak valid");
-        }
-        const data = proxyJson.data;
+        const data = await MasjidDB.fetchKhgt({
+          lat,
+          lng,
+          date: dateYmd,
+        });
 
         const t = data.times || {};
 
@@ -1327,8 +1389,22 @@
       function isYouTubeSlide(element) {
         if (!element) return false;
         if (element.getAttribute("data-type") === "youtube") return true;
-        if (element.tagName === "IFRAME") return true;
+        if (
+          element.tagName === "IFRAME" &&
+          element.getAttribute("data-type") !== "gdrive" &&
+          element.id &&
+          element.id.startsWith("yt-slide-")
+        ) {
+          return true;
+        }
         return false;
+      }
+
+      function getSlideDurationMs(element, fallbackMs = slideDuration) {
+        if (!element) return fallbackMs;
+        const sec = Number(element.getAttribute("data-duration"));
+        if (Number.isFinite(sec) && sec > 0) return sec * 1000;
+        return fallbackMs;
       }
 
       function onYouTubeIframeAPIReady() {
@@ -1456,8 +1532,17 @@
             player.pauseVideo();
           }
 
-          startProgress(slideDuration);
-          slideTimeout = setTimeout(nextSlide, slideDuration);
+          const durationMs = getSlideDurationMs(current, slideDuration);
+          startProgress(durationMs);
+          slideTimeout = setTimeout(nextSlide, durationMs);
+        } else if (current.getAttribute("data-type") === "gdrive") {
+          isVideo = true;
+          if (player && typeof player.pauseVideo === "function") {
+            player.pauseVideo();
+          }
+          const durationMs = getSlideDurationMs(current, 30000);
+          startProgress(durationMs);
+          slideTimeout = setTimeout(nextSlide, durationMs);
         } else if (isYouTubeSlide(current)) {
           isVideo = true;
 
@@ -1491,8 +1576,13 @@
           activeSlide.getAttribute("data-type") === "image" ||
           activeSlide.tagName === "IMG"
         ) {
-          startProgress(slideDuration);
-          slideTimeout = setTimeout(nextSlide, slideDuration);
+          const durationMs = getSlideDurationMs(activeSlide, slideDuration);
+          startProgress(durationMs);
+          slideTimeout = setTimeout(nextSlide, durationMs);
+        } else if (activeSlide.getAttribute("data-type") === "gdrive") {
+          const durationMs = getSlideDurationMs(activeSlide, 30000);
+          startProgress(durationMs);
+          slideTimeout = setTimeout(nextSlide, durationMs);
         } else if (isYouTubeSlide(activeSlide)) {
           if (ytApiReady) {
             playVideoSlide(activeSlide);
@@ -1513,7 +1603,7 @@
         initSlider();
       });
 
-      /* AUTO FULLSCREEN TIAP 3 MENIT */
+      /* AUTO FULLSCREEN TIAP 3 MENIT (slider content only) */
       setInterval(() => {
         // Hanya lakukan auto-fullscreen untuk konten biasa jika sedang tidak ada overlay sholat
         const sholatOverlay = document.getElementById("sholat-overlay");
@@ -1527,6 +1617,37 @@
         sliderEl.classList.toggle("fullscreen");
         appContainer.classList.toggle("fullscreen-active");
       }, 180000); // 3 menit
+
+      /* TOMBOL FULL SCREEN BROWSER (pojok kanan atas) */
+      (function initBrowserFullscreen() {
+        const btn = document.getElementById("btnFullscreen");
+        const label = document.getElementById("fsLabel");
+        const iconEnter = document.getElementById("iconEnterFs");
+        const iconExit = document.getElementById("iconExitFs");
+        if (!btn) return;
+
+        function syncFsUi() {
+          const active = !!document.fullscreenElement;
+          if (label) label.textContent = active ? "Keluar" : "Full Screen";
+          if (iconEnter) iconEnter.style.display = active ? "none" : "block";
+          if (iconExit) iconExit.style.display = active ? "block" : "none";
+        }
+
+        btn.addEventListener("click", async () => {
+          try {
+            if (!document.fullscreenElement) {
+              await document.documentElement.requestFullscreen();
+            } else {
+              await document.exitFullscreen();
+            }
+          } catch (err) {
+            console.error("Fullscreen gagal:", err);
+          }
+        });
+
+        document.addEventListener("fullscreenchange", syncFsUi);
+        syncFsUi();
+      })();
 
       /* INFO SLIDER LOGIC */
       let infoSlideIdx = 0;
