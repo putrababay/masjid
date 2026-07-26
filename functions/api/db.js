@@ -147,11 +147,9 @@ async function createSession(db, user, request) {
       ok: true,
       user: publicUser(user),
       redirect:
-        user.role === "superadmin"
-          ? "user_masjid.html"
-          : user.role === "admin_masjid"
-            ? "admin.html"
-            : `index.html?mosque=${encodeURIComponent(user.mosqueId || "")}`,
+        user.role === "superadmin" || user.role === "admin_masjid"
+          ? "dashboard.html"
+          : `index.html?mosque=${encodeURIComponent(user.mosqueId || "")}`,
     },
     200,
     { "Set-Cookie": sessionCookie(token, request, SESSION_SECONDS) }
@@ -714,6 +712,102 @@ async function handleGet(db, url, actor) {
       .bind(target, provider, from, to)
       .all();
     return response({ ok: true, schedules: result.results || [] });
+  }
+  if (action === "dashboard_stats") {
+    const target = mosqueId || actor.mosqueId;
+    if (actor.role !== "superadmin" && actor.mosqueId !== target) {
+      throw new ApiError(403, "Akses ditolak");
+    }
+    const year = Number(url.searchParams.get("year")) || new Date().getFullYear();
+    const month = Number(url.searchParams.get("month")) || new Date().getMonth() + 1;
+    const monthPad = String(month).padStart(2, "0");
+    const from = `${year}-${monthPad}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const to = `${year}-${monthPad}-${String(lastDay).padStart(2, "0")}`;
+
+    const userCounts =
+      actor.role === "superadmin"
+        ? await db
+            .prepare(
+              `SELECT
+                 COUNT(*) AS totalUsers,
+                 SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) AS activeUsers,
+                 SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS pendingUsers,
+                 SUM(CASE WHEN role='admin_masjid' THEN 1 ELSE 0 END) AS adminMasjidUsers
+               FROM users`
+            )
+            .first()
+        : await db
+            .prepare(
+              `SELECT
+                 COUNT(*) AS totalUsers,
+                 SUM(CASE WHEN status='active' THEN 1 ELSE 0 END) AS activeUsers,
+                 SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) AS pendingUsers,
+                 SUM(CASE WHEN role='admin_masjid' THEN 1 ELSE 0 END) AS adminMasjidUsers
+               FROM users WHERE mosque_id=?`
+            )
+            .bind(target)
+            .first();
+
+    const mosqueCount =
+      actor.role === "superadmin"
+        ? await db.prepare("SELECT COUNT(*) AS total FROM mosques").first()
+        : { total: target ? 1 : 0 };
+
+    const sliderCount = await db
+      .prepare("SELECT COUNT(*) AS total FROM sliders WHERE mosque_id=? AND is_active=1")
+      .bind(target)
+      .first();
+
+    const nuDays = await db
+      .prepare(
+        `SELECT COUNT(*) AS total FROM prayer_schedules
+          WHERE mosque_id=? AND provider='NU' AND prayer_date BETWEEN ? AND ?`
+      )
+      .bind(target, from, to)
+      .first();
+    const khgtDays = await db
+      .prepare(
+        `SELECT COUNT(*) AS total FROM prayer_schedules
+          WHERE mosque_id=? AND provider='KHGT' AND prayer_date BETWEEN ? AND ?`
+      )
+      .bind(target, from, to)
+      .first();
+
+    const calendarRows = await db
+      .prepare(
+        `SELECT provider, prayer_date AS prayerDate, imsak, subuh, terbit, dhuha,
+                dzuhur, ashar, maghrib, isya, source
+           FROM prayer_schedules
+          WHERE mosque_id=? AND prayer_date BETWEEN ? AND ?
+          ORDER BY prayer_date, provider`
+      )
+      .bind(target, from, to)
+      .all();
+
+    const byDate = {};
+    for (const row of calendarRows.results || []) {
+      if (!byDate[row.prayerDate]) byDate[row.prayerDate] = { NU: null, KHGT: null };
+      byDate[row.prayerDate][row.provider] = row;
+    }
+
+    return response({
+      ok: true,
+      mosqueId: target,
+      year,
+      month,
+      stats: {
+        totalUsers: Number(userCounts?.totalUsers || 0),
+        activeUsers: Number(userCounts?.activeUsers || 0),
+        pendingUsers: Number(userCounts?.pendingUsers || 0),
+        adminMasjidUsers: Number(userCounts?.adminMasjidUsers || 0),
+        totalMosques: Number(mosqueCount?.total || 0),
+        activeSliders: Number(sliderCount?.total || 0),
+        nuDaysInMonth: Number(nuDays?.total || 0),
+        khgtDaysInMonth: Number(khgtDays?.total || 0),
+      },
+      calendar: byDate,
+    });
   }
   throw new ApiError(400, "Action tidak dikenali");
 }

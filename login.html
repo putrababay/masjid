@@ -314,7 +314,7 @@
           formData.get("identity"),
           formData.get("password")
         );
-        window.location.href = result.redirect || "admin.html";
+        window.location.href = result.redirect || "dashboard.html";
       } catch (err) {
         authMessage.style.display = "block";
         authMessage.textContent = err.message;
@@ -330,7 +330,7 @@
       try {
         const result = await MasjidDB.register(values);
         if (result.user) {
-          window.location.href = result.redirect || "user_masjid.html";
+          window.location.href = result.redirect || "dashboard.html";
           return;
         }
         authMessage.style.display = "block";
@@ -361,11 +361,9 @@
       const user = MasjidDB.getSession();
       if (user) {
         window.location.href =
-          user.role === "superadmin"
-            ? "user_masjid.html"
-            : user.role === "admin_masjid"
-              ? "admin.html"
-              : `index.html?mosque=${encodeURIComponent(user.mosqueId || "")}`;
+          user.role === "superadmin" || user.role === "admin_masjid"
+            ? "dashboard.html"
+            : `index.html?mosque=${encodeURIComponent(user.mosqueId || "")}`;
         return;
       }
       loadMosques();

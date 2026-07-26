@@ -148,6 +148,15 @@
         params: { mosqueId, provider, date },
       });
     },
+    async dashboardStats(mosqueId, year, month) {
+      return request("dashboard_stats", {
+        params: {
+          mosqueId: mosqueId || "",
+          year: year || "",
+          month: month || "",
+        },
+      });
+    },
     extractDriveId(value) {
       const text = String(value || "").trim();
       if (!text) return "";

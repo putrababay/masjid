@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Master Slider - Masjid TV</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="css/admin.css" rel="stylesheet" />
+  <style>
+    .crud-card {
+      border: 1px solid #dbe5e1;
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+    }
+    .crud-list-item {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .preview-box {
+      border: 1px dashed #94a3b8;
+      border-radius: 10px;
+      padding: 8px;
+      min-height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+    }
+    .preview-box img,
+    .preview-box iframe {
+      max-width: 100%;
+      width: 100%;
+      border-radius: 8px;
+      max-height: 220px;
+    }
+    .muted-help { font-size: 0.85rem; color: #64748b; }
+    .gdrive-banner {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="adminPageRoot">
+    <div class="row g-2 align-items-end mb-3">
+      <div class="col-md-5">
+        <label class="form-label">Masjid</label>
+        <select id="mosqueSelect" class="form-select"></select>
+      </div>
+      <div class="col-md-3">
+        <button id="reloadBtn" type="button" class="btn btn-outline-success w-100">Muat Ulang</button>
+      </div>
+    </div>
+
+    <div class="gdrive-banner">
+      <strong>Media Google Drive</strong>
+      <div class="muted-help mb-1">Upload gambar/video ke folder Drive, lalu tempel link file di form slide.</div>
+      <a href="https://drive.google.com/drive/folders/1oX7T4ZEZpJXi6FSOXKw8fkLB99PjMhgC?usp=sharing"
+        target="_blank" rel="noopener">Buka folder Google Drive media</a>
+    </div>
+
+    <div class="panel-card">
+      <div class="crud-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="form-label mb-0 fw-bold">Form Slider</label>
+          <button type="button" class="btn btn-success btn-sm" id="addSlideBtn">+ Tambah Slide</button>
+        </div>
+        <input type="hidden" id="slideId" />
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Tipe</label>
+            <select id="slideType" class="form-select">
+              <option value="image">Image (lokal / Drive)</option>
+              <option value="youtube">YouTube</option>
+              <option value="gdrive">Video Google Drive</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Mode Video</label>
+            <select id="slideIsLive" class="form-select">
+              <option value="regular">Regular</option>
+              <option value="live">Live</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Durasi (detik)</label>
+            <input type="number" id="slideDuration" class="form-control" min="5" value="15" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Nilai media</label>
+            <input type="text" id="slideValue" class="form-control"
+              placeholder="1.jpg · YouTube ID · atau link Google Drive file" />
+          </div>
+          <div class="col-12">
+            <div class="preview-box" id="slidePreviewBox">
+              <span class="muted-help">Preview media akan tampil di sini</span>
+            </div>
+          </div>
+          <div class="col-12 d-flex gap-2">
+            <button type="button" class="btn btn-primary btn-sm" id="saveSlideBtn">Simpan Slide</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="resetSlideBtn">Reset Form</button>
+          </div>
+        </div>
+        <hr />
+        <div id="slideList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/db.js"></script>
+  <script src="js/admin-shell.js"></script>
+  <script>
+    let slidesState = [];
+    let editingIndex = -1;
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function normalizeMediaValue(type, value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (type === "youtube") {
+        const yt = raw.match(/(?:youtu\.be\/|v=|embed\/)([a-zA-Z0-9_-]{6,})/);
+        return yt ? yt[1] : raw;
+      }
+      return raw;
+    }
+
+    function renderSlidePreview() {
+      const type = document.getElementById("slideType").value;
+      const value = normalizeMediaValue(type, document.getElementById("slideValue").value);
+      const box = document.getElementById("slidePreviewBox");
+      if (!value) {
+        box.innerHTML = '<span class="muted-help">Preview media akan tampil di sini</span>';
+        return;
+      }
+      if (type === "image") {
+        const src = MasjidDB.toDriveImageUrl(value);
+        box.innerHTML = `<img src="${escapeHtml(src)}" alt="Preview" onerror="this.outerHTML='<span class=&quot;muted-help&quot;>Gagal load image</span>'">`;
+        return;
+      }
+      if (type === "gdrive") {
+        const src = MasjidDB.toDriveEmbedUrl(value);
+        box.innerHTML = `<iframe height="200" src="${escapeHtml(src)}" title="Preview Drive" allow="autoplay" allowfullscreen></iframe>`;
+        return;
+      }
+      const isLive = document.getElementById("slideIsLive").value === "live";
+      const youtubeSrc = `https://www.youtube.com/embed/${encodeURIComponent(value)}?rel=0&modestbranding=1${isLive ? "" : "&start=0"}`;
+      box.innerHTML = `<iframe height="180" src="${youtubeSrc}" title="Preview YouTube" frameborder="0" allowfullscreen></iframe>`;
+    }
+
+    function resetSlideForm() {
+      editingIndex = -1;
+      document.getElementById("slideId").value = "";
+      document.getElementById("slideType").value = "image";
+      document.getElementById("slideIsLive").value = "regular";
+      document.getElementById("slideValue").value = "";
+      document.getElementById("slideDuration").value = "15";
+      renderSlidePreview();
+    }
+
+    function renderSlidesList() {
+      const list = document.getElementById("slideList");
+      if (!slidesState.length) {
+        list.innerHTML = '<div class="muted-help">Belum ada slide.</div>';
+        return;
+      }
+      list.innerHTML = slidesState
+        .map((slide, idx) => {
+          let label = "";
+          if (slide.type === "youtube") label = `YouTube (${slide.isLive ? "Live" : "Regular"}): ${escapeHtml(slide.value)}`;
+          else if (slide.type === "gdrive") label = `Google Drive Video: ${escapeHtml(slide.value)}`;
+          else label = `Image: ${escapeHtml(slide.value)}`;
+          return `<div class="crud-list-item">
+            <div>${idx + 1}. ${label}</div>
+            <div class="d-flex gap-1">
+              <button type="button" class="btn btn-outline-primary btn-sm" data-edit-slide="${idx}">Edit</button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-del-slide="${idx}">Hapus</button>
+            </div>
+          </div>`;
+        })
+        .join("");
+    }
+
+    async function loadSlides() {
+      const mosqueId = document.getElementById("mosqueSelect").value;
+      document.getElementById("adminTopMeta").textContent = `Masjid: ${mosqueId}`;
+      const data = await MasjidDB.listSliders(mosqueId);
+      slidesState = (data.sliders || []).map((s) => ({
+        id: s.id,
+        type: ["youtube", "gdrive", "image"].includes(s.type) ? s.type : "image",
+        value: String(s.value || "").trim(),
+        isLive: !!s.isLive,
+        duration: Number(s.duration) || 15,
+      }));
+      renderSlidesList();
+      resetSlideForm();
+    }
+
+    (async () => {
+      const user = await AdminShell.mount({
+        page: "slider",
+        title: "Master Slider",
+      });
+      if (!user) return;
+
+      const mosqueSelect = document.getElementById("mosqueSelect");
+      const mosques = await MasjidDB.listAdminMosques();
+      const list = mosques.mosques || [];
+      mosqueSelect.innerHTML = list
+        .map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name || m.id)}</option>`)
+        .join("");
+      const q = new URLSearchParams(location.search).get("mosque");
+      mosqueSelect.value = q || user.mosqueId || list[0]?.id || "";
+
+      document.getElementById("slideType").addEventListener("change", renderSlidePreview);
+      document.getElementById("slideIsLive").addEventListener("change", renderSlidePreview);
+      document.getElementById("slideValue").addEventListener("input", renderSlidePreview);
+      document.getElementById("addSlideBtn").addEventListener("click", resetSlideForm);
+      document.getElementById("resetSlideBtn").addEventListener("click", resetSlideForm);
+      document.getElementById("reloadBtn").addEventListener("click", () => {
+        loadSlides().catch((err) => alert(err.message));
+      });
+      mosqueSelect.addEventListener("change", () => {
+        loadSlides().catch((err) => alert(err.message));
+      });
+
+      document.getElementById("saveSlideBtn").addEventListener("click", async () => {
+        const type = document.getElementById("slideType").value;
+        const value = normalizeMediaValue(type, document.getElementById("slideValue").value);
+        if (!value) {
+          alert("Nilai slide tidak boleh kosong.");
+          return;
+        }
+        const mosqueId = mosqueSelect.value;
+        const slide = {
+          id: document.getElementById("slideId").value || undefined,
+          mosqueId,
+          type,
+          value,
+          isLive: type === "youtube" && document.getElementById("slideIsLive").value === "live",
+          duration: Number(document.getElementById("slideDuration").value) || 15,
+          sortOrder: editingIndex >= 0 ? editingIndex : slidesState.length,
+          isActive: true,
+        };
+        try {
+          await MasjidDB.saveSlider(slide);
+          await loadSlides();
+          alert("Slide berhasil disimpan.");
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      document.getElementById("slideList").addEventListener("click", async (e) => {
+        const editIdx = e.target.getAttribute("data-edit-slide");
+        const delIdx = e.target.getAttribute("data-del-slide");
+        if (editIdx !== null) {
+          const idx = Number(editIdx);
+          const slide = slidesState[idx];
+          if (!slide) return;
+          editingIndex = idx;
+          document.getElementById("slideId").value = slide.id || "";
+          document.getElementById("slideType").value = slide.type;
+          document.getElementById("slideIsLive").value = slide.isLive ? "live" : "regular";
+          document.getElementById("slideValue").value = slide.value || "";
+          document.getElementById("slideDuration").value = slide.duration || 15;
+          renderSlidePreview();
+        }
+        if (delIdx !== null) {
+          const idx = Number(delIdx);
+          const slide = slidesState[idx];
+          if (!confirm("Hapus slide ini?")) return;
+          try {
+            if (slide?.id) await MasjidDB.deleteSlider(slide.id);
+            await loadSlides();
+          } catch (err) {
+            alert(err.message);
+          }
+        }
+      });
+
+      try {
+        await loadSlides();
+      } catch (err) {
+        alert(err.message);
+      }
+    })();
+  </script>
+</body>
+</html>
