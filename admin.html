@@ -249,12 +249,20 @@
 
     function renderQrisPreview() {
       const raw = form.elements.qrisImageUrl?.value || "";
-      const src = MasjidDB.toDriveImageUrl(raw);
-      if (!src) {
+      if (!raw.trim()) {
         el.qrisPreviewBox.innerHTML = '<span class="muted-help">Preview QRIS</span>';
         return;
       }
-      el.qrisPreviewBox.innerHTML = `<img src="${escapeHtml(src)}" alt="QRIS" style="max-width:180px" onerror="this.outerHTML='<span class=&quot;muted-help&quot;>Gagal load QRIS</span>'">`;
+      el.qrisPreviewBox.innerHTML = "";
+      const img = document.createElement("img");
+      img.alt = "QRIS";
+      img.style.maxWidth = "180px";
+      img.addEventListener("drive-image-failed", () => {
+        el.qrisPreviewBox.innerHTML =
+          '<span class="muted-help">Gagal load QRIS</span>';
+      });
+      MasjidDB.bindDriveImageFallback(img, raw, 600);
+      el.qrisPreviewBox.appendChild(img);
     }
 
     function resetRunningTextForm() {
@@ -382,7 +390,7 @@
         const formData = new FormData(form);
         const settings = Object.fromEntries(formData.entries());
         settings.runningTexts = [...runningTextsState];
-        settings.qrisImageUrl = MasjidDB.toDriveImageUrl(settings.qrisImageUrl || "");
+        settings.qrisImageUrl = String(settings.qrisImageUrl || "").trim();
         const parsedLat = Number(settings.khgtLat);
         const parsedLng = Number(settings.khgtLng);
         settings.khgt = {

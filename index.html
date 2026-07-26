@@ -955,6 +955,13 @@
         const qrisImage = document.getElementById("qris-image");
         if (qrisImage && textDbConfig.qrisImageUrl) {
           qrisImage.src = toDriveImageUrl(textDbConfig.qrisImageUrl);
+          if (window.MasjidDB) {
+            MasjidDB.bindDriveImageFallback(
+              qrisImage,
+              textDbConfig.qrisImageUrl,
+              600
+            );
+          }
         }
 
         // Backward compatibility: jika slides belum diisi, pakai regular/live lama.
@@ -1016,9 +1023,9 @@
               return `<iframe class="slider-item${isActive}" data-type="gdrive" data-duration="${duration}" src="${src}" allow="autoplay" allowfullscreen></iframe>`;
             }
             if (slide.type === "image" && slide.value) {
-              const src = toDriveImageUrl(slide.value);
+              const src = toDriveImageUrl(slide.value).replace(/"/g, "&quot;");
               const duration = Number(slide.duration) || 15;
-              return `<img class="slider-item${isActive}" data-type="image" data-duration="${duration}" src="${src}" />`;
+              return `<img class="slider-item${isActive}" data-type="image" data-slide-index="${idx}" data-duration="${duration}" src="${src}" />`;
             }
             return "";
           })
@@ -1027,6 +1034,15 @@
         slider.innerHTML =
           itemsHtml ||
           `<img class="slider-item active" src="1.jpg" data-type="image" />`;
+
+        if (window.MasjidDB) {
+          slider
+            .querySelectorAll("img.slider-item[data-slide-index]")
+            .forEach((img) => {
+              const config = slideConfigs[Number(img.dataset.slideIndex)];
+              if (config) MasjidDB.bindDriveImageFallback(img, config.value);
+            });
+        }
       }
 
       async function loadTextDatabase() {

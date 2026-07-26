@@ -4,14 +4,17 @@
   "version": "1.0.0",
   "description": "Smart TV Masjid — Cloudflare Pages + D1",
   "scripts": {
+    "clean:tmp": "node -e \"const fs=require('fs'),p=require('path'),d='.wrangler/tmp';try{for(const n of fs.existsSync(d)?fs.readdirSync(d):[]){if(/^(dev|pages|bundle)-/.test(n)){try{fs.rmSync(p.join(d,n),{recursive:true,force:true})}catch(e){}}}}catch(e){}\"",
+    "predev": "npm run clean:tmp",
     "dev": "wrangler pages dev . --local --persist-to .wrangler/state --port 8788",
-    "db:schema:local": "wrangler d1 execute masjid-db --local --file=./schema-d1.sql",
-    "db:seed:local": "wrangler d1 execute masjid-db --local --file=./seed-d1.sql",
-    "db:migrate:prayer:local": "wrangler d1 execute masjid-db --local --file=./migrate-prayer-global.sql",
-    "db:migrate:prayer:remote": "wrangler d1 execute masjid-db --remote --file=./migrate-prayer-global.sql",
+    "db:schema:local": "wrangler d1 execute masjid-db --local --persist-to .wrangler/state --file=./schema-d1.sql",
+    "db:seed:local": "wrangler d1 execute masjid-db --local --persist-to .wrangler/state --file=./seed-d1.sql",
+    "db:migrate:prayer:local": "wrangler d1 execute masjid-db --local --persist-to .wrangler/state --file=./migrate-prayer-global.sql",
     "db:reset:local": "npm run db:schema:local && npm run db:seed:local",
+    "db:check:local": "wrangler d1 execute masjid-db --local --persist-to .wrangler/state --command=\"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;\"",
     "db:schema:remote": "wrangler d1 execute masjid-db --remote --file=./schema-d1.sql",
     "db:seed:remote": "wrangler d1 execute masjid-db --remote --file=./seed-d1.sql",
+    "db:migrate:prayer:remote": "wrangler d1 execute masjid-db --remote --file=./migrate-prayer-global.sql",
     "deploy": "wrangler pages deploy . --project-name=masjidtv"
   },
   "devDependencies": {

@@ -174,25 +174,85 @@
     extractDriveId(value) {
       const text = String(value || "").trim();
       if (!text) return "";
-      let match = text.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if (match) return match[1];
-      match = text.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      const patterns = [
+        /\/file\/d\/([a-zA-Z0-9_-]{10,})/,
+        /\/d\/([a-zA-Z0-9_-]{10,})/,
+        /[?&](?:id|file)=([a-zA-Z0-9_-]{10,})/,
+      ];
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) return match[1];
+      }
+      return /^[a-zA-Z0-9_-]{20,}$/.test(text) && !text.includes(".")
+        ? text
+        : "";
+    },
+    extractDriveFolderId(value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      const match = text.match(/\/folders\/([a-zA-Z0-9_-]{10,})/);
       if (match) return match[1];
       return /^[a-zA-Z0-9_-]{20,}$/.test(text) && !text.includes(".")
         ? text
         : "";
     },
-    toDriveImageUrl(value) {
+    /**
+     * Beberapa host gambar Drive sering kena rate limit / balas HTML, jadi
+     * sediakan beberapa kandidat untuk dicoba berurutan saat <img> gagal.
+     */
+    driveImageSources(value, width = 1600) {
       const id = this.extractDriveId(value);
-      return id
-        ? `https://drive.google.com/uc?export=view&id=${id}`
-        : String(value || "").trim();
+      const raw = String(value || "").trim();
+      if (!id) return raw ? [raw] : [];
+      const size = Math.min(Math.max(Number(width) || 1600, 200), 4096);
+      return [
+        `https://lh3.googleusercontent.com/d/${id}=w${size}`,
+        `https://drive.google.com/thumbnail?id=${id}&sz=w${size}`,
+        `/api/gdrive?file=${id}&w=${size}`,
+      ];
+    },
+    toDriveImageUrl(value, width = 1600) {
+      return this.driveImageSources(value, width)[0] || "";
+    },
+    /**
+     * Pasang rantai fallback pada <img>; dipakai slider agar gambar Drive
+     * tidak blank saat satu host menolak permintaan.
+     */
+    bindDriveImageFallback(img, value, width = 1600) {
+      if (!img) return img;
+      const sources = this.driveImageSources(value, width);
+      if (!sources.length) return img;
+      let index = 0;
+      img.addEventListener("error", () => {
+        index += 1;
+        if (index < sources.length) {
+          img.src = sources[index];
+          return;
+        }
+        img.dispatchEvent(new CustomEvent("drive-image-failed", { bubbles: true }));
+      });
+      if (img.getAttribute("src") !== sources[0]) img.src = sources[0];
+      return img;
     },
     toDriveEmbedUrl(value) {
       const id = this.extractDriveId(value);
       return id
         ? `https://drive.google.com/file/d/${id}/preview`
         : String(value || "").trim();
+    },
+    async listDriveFolder(folderUrl) {
+      const folder = String(folderUrl || "").trim();
+      if (!folder) throw new Error("URL folder Google Drive belum diisi");
+      const params = new URLSearchParams({ folder });
+      const response = await fetch(`/api/gdrive?${params.toString()}`);
+      const result = await response.json().catch(() => ({
+        ok: false,
+        message: "Respons Drive tidak valid",
+      }));
+      if (!response.ok || !result.ok) {
+        throw new Error(result.message || "Gagal membaca folder Drive");
+      }
+      return result;
     },
     async fetchKhgt({ lat, lng, date }) {
       const params = new URLSearchParams({

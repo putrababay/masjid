@@ -48,6 +48,38 @@
       padding: 12px 14px;
       margin-bottom: 1rem;
     }
+    .drive-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .drive-item {
+      border: 1px solid #cbd5f5;
+      border-radius: 10px;
+      padding: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .drive-item.selected {
+      border-color: #0f766e;
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2);
+    }
+    .drive-item .thumb {
+      width: 100%;
+      height: 96px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #e2e8f0;
+      display: block;
+    }
+    .drive-item .name {
+      font-size: 0.78rem;
+      margin-top: 6px;
+      word-break: break-word;
+      line-height: 1.2;
+    }
+    .drive-item .badge-kind { font-size: 0.68rem; }
   </style>
 </head>
 <body>
@@ -64,9 +96,30 @@
 
     <div class="gdrive-banner">
       <strong>Media Google Drive</strong>
-      <div class="muted-help mb-1">Upload gambar/video ke folder Drive, lalu tempel link file di form slide.</div>
-      <a href="https://drive.google.com/drive/folders/1oX7T4ZEZpJXi6FSOXKw8fkLB99PjMhgC?usp=sharing"
-        target="_blank" rel="noopener">Buka folder Google Drive media</a>
+      <div class="muted-help mb-2">
+        Upload file ke folder Drive (tombol "Upload ke Drive"), lalu klik "Muat Isi Folder"
+        untuk memilih file dan langsung menjadikannya slide. Folder harus dibagikan
+        <em>Anyone with the link</em>.
+      </div>
+      <div class="row g-2 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label mb-1">URL Folder Google Drive</label>
+          <input type="url" id="driveFolderUrl" class="form-control form-control-sm"
+            placeholder="https://drive.google.com/drive/folders/..." />
+        </div>
+        <div class="col-md-6 d-flex gap-2 flex-wrap">
+          <button type="button" class="btn btn-success btn-sm" id="driveLoadBtn">Muat Isi Folder</button>
+          <a class="btn btn-outline-success btn-sm" id="driveOpenBtn" target="_blank" rel="noopener">Upload ke Drive</a>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="driveSaveFolderBtn">Simpan URL Folder</button>
+        </div>
+      </div>
+      <div id="driveStatus" class="muted-help mt-2"></div>
+      <div id="driveGrid" class="drive-grid"></div>
+      <div id="driveActions" class="d-none mt-2 d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-primary btn-sm" id="driveAddSelectedBtn">Tambahkan Terpilih Jadi Slide</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="driveSelectAllBtn">Pilih Semua</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="driveClearBtn">Bersihkan Pilihan</button>
+      </div>
     </div>
 
     <div class="panel-card">
@@ -123,6 +176,8 @@
   <script>
     let slidesState = [];
     let editingIndex = -1;
+    let currentSettings = null;
+    const driveState = { files: [], selected: new Set() };
 
     function escapeHtml(str) {
       return String(str)
@@ -152,8 +207,15 @@
         return;
       }
       if (type === "image") {
-        const src = MasjidDB.toDriveImageUrl(value);
-        box.innerHTML = `<img src="${escapeHtml(src)}" alt="Preview" onerror="this.outerHTML='<span class=&quot;muted-help&quot;>Gagal load image</span>'">`;
+        box.innerHTML = "";
+        const img = document.createElement("img");
+        img.alt = "Preview";
+        img.addEventListener("drive-image-failed", () => {
+          box.innerHTML =
+            '<span class="muted-help">Gagal load image. Pastikan file Drive dibagikan publik.</span>';
+        });
+        MasjidDB.bindDriveImageFallback(img, value, 800);
+        box.appendChild(img);
         return;
       }
       if (type === "gdrive") {
@@ -199,6 +261,151 @@
         .join("");
     }
 
+    function driveFileLink(id) {
+      return `https://drive.google.com/file/d/${id}/view`;
+    }
+
+    function setDriveStatus(message, isError = false) {
+      const box = document.getElementById("driveStatus");
+      box.textContent = message || "";
+      box.style.color = isError ? "#b91c1c" : "#64748b";
+    }
+
+    function renderDriveGrid() {
+      const grid = document.getElementById("driveGrid");
+      const actions = document.getElementById("driveActions");
+      const usable = driveState.files.filter((f) => f.kind === "image" || f.kind === "video");
+      if (!usable.length) {
+        grid.innerHTML = "";
+        actions.classList.add("d-none");
+        return;
+      }
+      actions.classList.remove("d-none");
+      grid.innerHTML = usable
+        .map((file) => {
+          const selected = driveState.selected.has(file.id) ? " selected" : "";
+          const thumb = file.thumbnail || MasjidDB.toDriveImageUrl(file.id, 400);
+          const badge = file.kind === "image" ? "Image" : "Video";
+          return `<div class="drive-item${selected}" data-drive-id="${escapeHtml(file.id)}">
+            <img class="thumb" src="${escapeHtml(thumb)}" alt="${escapeHtml(file.name)}" loading="lazy" />
+            <div class="name">${escapeHtml(file.name)}</div>
+            <span class="badge text-bg-secondary badge-kind">${badge}</span>
+          </div>`;
+        })
+        .join("");
+
+      grid.querySelectorAll(".drive-item").forEach((item) => {
+        const id = item.getAttribute("data-drive-id");
+        const img = item.querySelector("img.thumb");
+        if (!img || !id) return;
+        img.addEventListener(
+          "error",
+          () => {
+            MasjidDB.bindDriveImageFallback(img, id, 400);
+          },
+          { once: true }
+        );
+      });
+    }
+
+    async function loadDriveFolder() {
+      const folderUrl = document.getElementById("driveFolderUrl").value.trim();
+      if (!folderUrl) {
+        setDriveStatus("Isi URL folder Google Drive terlebih dahulu.", true);
+        return;
+      }
+      setDriveStatus("Memuat isi folder Drive...");
+      try {
+        const result = await MasjidDB.listDriveFolder(folderUrl);
+        driveState.files = result.files || [];
+        driveState.selected.clear();
+        renderDriveGrid();
+        const usable = driveState.files.filter((f) => f.kind === "image" || f.kind === "video").length;
+        setDriveStatus(
+          usable
+            ? `${usable} media siap dipilih dari ${result.total} item pada folder.`
+            : "Folder terbaca tetapi belum ada file gambar/video."
+        );
+      } catch (err) {
+        driveState.files = [];
+        renderDriveGrid();
+        setDriveStatus(err.message, true);
+      }
+    }
+
+    async function addSelectedDriveFiles(mosqueId) {
+      const chosen = driveState.files.filter((f) => driveState.selected.has(f.id));
+      if (!chosen.length) {
+        setDriveStatus("Belum ada file yang dipilih.", true);
+        return;
+      }
+      const existing = new Set(
+        slidesState.map((s) => MasjidDB.extractDriveId(s.value)).filter(Boolean)
+      );
+      let order = slidesState.length;
+      let added = 0;
+      let skipped = 0;
+      for (const file of chosen) {
+        if (existing.has(file.id)) {
+          skipped += 1;
+          continue;
+        }
+        await MasjidDB.saveSlider({
+          mosqueId,
+          type: file.kind === "video" ? "gdrive" : "image",
+          value: driveFileLink(file.id),
+          isLive: false,
+          duration: file.kind === "video" ? 30 : 15,
+          sortOrder: order,
+          isActive: true,
+        });
+        order += 1;
+        added += 1;
+      }
+      driveState.selected.clear();
+      renderDriveGrid();
+      await loadSlides();
+      setDriveStatus(
+        `${added} slide ditambahkan${skipped ? `, ${skipped} dilewati karena sudah ada` : ""}.`
+      );
+    }
+
+    async function loadMosqueContext(mosqueId) {
+      const input = document.getElementById("driveFolderUrl");
+      const openLink = document.getElementById("driveOpenBtn");
+      try {
+        const data = await MasjidDB.getSettings(mosqueId, true);
+        currentSettings = data.settings || null;
+      } catch {
+        currentSettings = null;
+      }
+      input.value = currentSettings?.gdriveFolderUrl || "";
+      const folderId = MasjidDB.extractDriveFolderId(input.value);
+      openLink.href = folderId
+        ? `https://drive.google.com/drive/folders/${folderId}`
+        : "https://drive.google.com/drive/my-drive";
+      driveState.files = [];
+      driveState.selected.clear();
+      renderDriveGrid();
+      setDriveStatus(
+        input.value ? "" : "Folder Drive belum diatur untuk masjid ini."
+      );
+    }
+
+    async function saveDriveFolderUrl(mosqueId) {
+      const folderUrl = document.getElementById("driveFolderUrl").value.trim();
+      if (!currentSettings) {
+        setDriveStatus("Setting masjid belum termuat, coba muat ulang.", true);
+        return;
+      }
+      await MasjidDB.saveSettings(mosqueId, {
+        ...currentSettings,
+        gdriveFolderUrl: folderUrl,
+      });
+      currentSettings.gdriveFolderUrl = folderUrl;
+      setDriveStatus("URL folder Drive tersimpan.");
+    }
+
     async function loadSlides() {
       const mosqueId = document.getElementById("mosqueSelect").value;
       document.getElementById("adminTopMeta").textContent = `Masjid: ${mosqueId}`;
@@ -224,7 +431,47 @@
         loadSlides().catch((err) => alert(err.message));
       });
       mosqueSelect.addEventListener("change", () => {
-        loadSlides().catch((err) => alert(err.message));
+        loadMosqueContext(mosqueSelect.value)
+          .then(loadSlides)
+          .catch((err) => alert(err.message));
+      });
+
+      document.getElementById("driveLoadBtn").addEventListener("click", () => {
+        loadDriveFolder();
+      });
+      document.getElementById("driveSaveFolderBtn").addEventListener("click", () => {
+        saveDriveFolderUrl(mosqueSelect.value).catch((err) =>
+          setDriveStatus(err.message, true)
+        );
+      });
+      document.getElementById("driveFolderUrl").addEventListener("input", (e) => {
+        const folderId = MasjidDB.extractDriveFolderId(e.target.value);
+        document.getElementById("driveOpenBtn").href = folderId
+          ? `https://drive.google.com/drive/folders/${folderId}`
+          : "https://drive.google.com/drive/my-drive";
+      });
+      document.getElementById("driveGrid").addEventListener("click", (e) => {
+        const item = e.target.closest("[data-drive-id]");
+        if (!item) return;
+        const id = item.getAttribute("data-drive-id");
+        if (driveState.selected.has(id)) driveState.selected.delete(id);
+        else driveState.selected.add(id);
+        item.classList.toggle("selected");
+      });
+      document.getElementById("driveSelectAllBtn").addEventListener("click", () => {
+        driveState.files
+          .filter((f) => f.kind === "image" || f.kind === "video")
+          .forEach((f) => driveState.selected.add(f.id));
+        renderDriveGrid();
+      });
+      document.getElementById("driveClearBtn").addEventListener("click", () => {
+        driveState.selected.clear();
+        renderDriveGrid();
+      });
+      document.getElementById("driveAddSelectedBtn").addEventListener("click", () => {
+        addSelectedDriveFiles(mosqueSelect.value).catch((err) =>
+          setDriveStatus(err.message, true)
+        );
       });
 
       document.getElementById("saveSlideBtn").addEventListener("click", async () => {
@@ -323,6 +570,7 @@
 
       bindSliderEvents(mosqueSelect);
       try {
+        await loadMosqueContext(mosqueSelect.value);
         await loadSlides();
       } catch (err) {
         alert(err.message);
