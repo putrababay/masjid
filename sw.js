@@ -1,12 +1,15 @@
-const CACHE_NAME = "masjid-pwa-v1";
+const CACHE_NAME = "masjid-pwa-v3";
 
 const APP_SHELL_FILES = [
   "./",
   "./index.html",
-  "./admin.php",
-  "./db.php",
-  "./khgt-proxy.php",
+  "./login.html",
+  "./admin.html",
+  "./user_masjid.html",
+  "./jadwal.html",
+  "./js/db.js",
   "./manifest.webmanifest",
+  "./icon.svg",
   "./1.jpg",
   "./11.jpg",
   "./2.jpg",
@@ -39,30 +42,50 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
-  // Data API dynamic selalu coba network dulu
+  // API dan resource lintas domain tidak pernah masuk cache aplikasi.
+  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) {
+    return;
+  }
+
+  // Navigasi/HTML selalu network-first agar deployment Git terbaru langsung terlihat.
   if (
-    url.pathname.endsWith("/db.php") ||
-    url.pathname.endsWith("/khgt-proxy.php")
+    event.request.mode === "navigate" ||
+    event.request.destination === "document"
   ) {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          event.waitUntil(
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy))
+          );
+          return response;
+        })
+        .catch(async () => {
+          return (
+            (await caches.match(event.request)) ||
+            (await caches.match("./index.html"))
+          );
+        })
     );
     return;
   }
 
-  // Static assets: cache first
+  // Asset lokal: stale-while-revalidate.
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
+      const network = fetch(event.request)
         .then((networkRes) => {
           const responseClone = networkRes.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          event.waitUntil(
+            caches.open(CACHE_NAME).then((cache) => {
+              return cache.put(event.request, responseClone);
+            })
+          );
           return networkRes;
         })
-        .catch(() => caches.match("./index.html"));
+        .catch(() => cached);
+      return cached || network;
     })
   );
 });

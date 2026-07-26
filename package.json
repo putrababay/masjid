@@ -1,5 +1,5 @@
 {
-  "name": "masjid-tv",
+  "name": "masjidtv",
   "private": true,
   "version": "1.0.0",
   "description": "Smart TV Masjid — Cloudflare Pages + D1",
@@ -10,7 +10,7 @@
     "db:reset:local": "npm run db:schema:local && npm run db:seed:local",
     "db:schema:remote": "wrangler d1 execute masjid-db --remote --file=./schema-d1.sql",
     "db:seed:remote": "wrangler d1 execute masjid-db --remote --file=./seed-d1.sql",
-    "deploy": "wrangler pages deploy . --project-name=masjid-tv"
+    "deploy": "wrangler pages deploy . --project-name=masjidtv"
   },
   "devDependencies": {
     "wrangler": "^4.114.0"
