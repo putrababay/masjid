@@ -31,7 +31,8 @@ async function sha256(value) {
 }
 
 export async function hashPassword(password) {
-  const iterations = 210000;
+  // Cloudflare Workers Web Crypto membatasi PBKDF2 maksimal 100.000 iterasi.
+  const iterations = 100000;
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey(
     "raw",
