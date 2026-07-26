@@ -2,10 +2,6 @@ name = "masjidtv"
 compatibility_date = "2026-07-26"
 pages_build_output_dir = "."
 
-[observability]
-enabled = true
-head_sampling_rate = 1
-
 [[d1_databases]]
 binding = "DB"
 database_name = "masjid-db"
